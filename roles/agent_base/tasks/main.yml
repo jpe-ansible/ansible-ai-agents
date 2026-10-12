@@ -1,0 +1,25 @@
+---
+- name: Validate the agent roster contract
+  ansible.builtin.assert:
+    quiet: true
+    that:
+      - >-
+        agent_base_agents
+        | map(attribute='name')
+        | select('match', '^[a-z]+-[a-z]+$')
+        | list
+        | length == agent_base_agents | length
+      - >-
+        agent_base_agents | map(attribute='name') | list | unique | length
+        == agent_base_agents | length
+      - >-
+        agent_base_agents | map(attribute='display') | list | unique | length
+        == agent_base_agents | length
+      - >-
+        agent_base_agents | map(attribute='owns') | flatten | unique | length
+        == agent_base_agents | map(attribute='owns') | flatten | length
+    fail_msg: >-
+      Agent roster violations: names must match lowercase <function>-<persona>;
+      names must be unique={{ agent_base_agents | map(attribute='name') | list }};
+      displays must be unique={{ agent_base_agents | map(attribute='display') | list }};
+      owns values must be unique={{ agent_base_agents | map(attribute='owns') | flatten | list }}.

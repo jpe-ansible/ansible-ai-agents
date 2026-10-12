@@ -1,0 +1,6 @@
+---
+- name: Validate the agent roster
+  hosts: localhost
+  gather_facts: false
+  roles:
+    - role: agent_base

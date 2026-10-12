@@ -1,0 +1,36 @@
+---
+name: Release Please
+
+on:
+  push:
+    branches: [main]
+
+permissions: {}
+
+jobs:
+  secrets-present:
+    name: Check release secret
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    outputs:
+      present: ${{ steps.check.outputs.present }}
+    steps:
+      - name: Check required secret
+        id: check
+        env:
+          HAS: ${{ secrets.GH_ACTION_RELEASE_PLEASE_PRIVATE_KEY != '' }}
+        run: |
+          echo "present=$HAS" >> "$GITHUB_OUTPUT"
+          if [ "$HAS" != "true" ]; then
+            echo "::notice::Release Please skipped because its required secret is unavailable."
+          fi
+
+  release-please:
+    needs: secrets-present
+    if: needs.secrets-present.outputs.present == 'true'
+    permissions:
+      contents: write
+      pull-requests: write
+    uses: dryvist/.github/.github/workflows/_release-please.yml@74e4e37bd0c362dd145ad0537361084336c8ff55 # v1.14.1
+    secrets:
+      GH_ACTION_RELEASE_PLEASE_PRIVATE_KEY: ${{ secrets.GH_ACTION_RELEASE_PLEASE_PRIVATE_KEY }}
