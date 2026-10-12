@@ -1,7 +1,7 @@
 # Ansible AI Agents
 
-The `dryvist.ai_agents` collection defines one roster input for a fleet of separately identified AI agents. Its initial release validates agent names,
-display names, and exclusive ownership of external systems.
+The `dryvist.ai_agents` collection defines a roster contract and a generic Hermes
+runtime role for separately identified AI agents.
 
 ## Install
 
@@ -51,3 +51,9 @@ ansible-playbook -i examples/inventory.yml tests/contract.yml
 ```
 
 The test validates the example roster, expects duplicate ownership and invalid names to fail, and checks argument-spec rejection of a missing required field.
+
+## Hermes runtime
+
+The `hermes_runtime` role installs a pinned Hermes Agent release and manages
+gateway and dashboard systemd units. See [the role README](roles/hermes_runtime/README.md)
+for inputs and an example.
