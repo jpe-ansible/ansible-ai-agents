@@ -1,0 +1,36 @@
+---
+- name: Deploy the Hermes gateway systemd unit
+  become: true
+  ansible.builtin.template:
+    src: hermes-gateway.service.j2
+    dest: "{{ hermes_runtime_gateway_unit_path }}"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: "{{ hermes_runtime_gateway_restart_handler }}"
+
+- name: Deploy the Hermes dashboard systemd unit
+  become: true
+  ansible.builtin.template:
+    src: hermes-dashboard.service.j2
+    dest: "{{ hermes_runtime_dashboard_unit_path }}"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: "{{ hermes_runtime_dashboard_restart_handler }}"
+
+- name: Enable and start the Hermes gateway
+  become: true
+  ansible.builtin.systemd_service:
+    name: "{{ hermes_runtime_gateway_unit_path | basename }}"
+    state: started
+    enabled: true
+    daemon_reload: true
+
+- name: Enable and start the Hermes dashboard
+  become: true
+  ansible.builtin.systemd_service:
+    name: "{{ hermes_runtime_dashboard_unit_path | basename }}"
+    state: started
+    enabled: true
+    daemon_reload: true
