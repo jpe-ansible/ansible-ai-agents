@@ -1,0 +1,71 @@
+---
+- name: Fetch the pinned Hermes installer with checksum verification
+  become: true
+  ansible.builtin.get_url:
+    url: "{{ hermes_runtime_installer_url }}"
+    dest: "{{ hermes_runtime_installer_path }}"
+    checksum: "sha256:{{ hermes_runtime_installer_sha256 }}"
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Run the verified installer for a missing Hermes CLI
+  become: true
+  ansible.builtin.command:
+    argv:
+      - bash
+      - "{{ hermes_runtime_installer_path }}"
+      - --branch
+      - "{{ hermes_runtime_version_tag }}"
+      - --skip-setup
+      - --non-interactive
+      - --skip-computer-use
+    creates: "{{ hermes_runtime_bin }}"
+  changed_when: true
+
+- name: Pin the Hermes checkout to the requested release tag
+  become: true
+  ansible.builtin.git:
+    repo: "{{ hermes_runtime_repo_url }}"
+    dest: "{{ hermes_runtime_install_dir }}"
+    version: "{{ hermes_runtime_version_tag }}"
+    refspec: "+refs/tags/{{ hermes_runtime_version_tag }}:refs/tags/{{ hermes_runtime_version_tag }}"
+    depth: 1
+    force: true
+  register: hermes_runtime_checkout
+
+- name: Install or upgrade Hermes when the checkout moved
+  become: true
+  ansible.builtin.command:
+    argv:
+      - bash
+      - "{{ hermes_runtime_installer_path }}"
+      - --branch
+      - "{{ hermes_runtime_version_tag }}"
+      - --skip-setup
+      - --non-interactive
+      - --skip-computer-use
+    creates: "{{ omit if hermes_runtime_checkout.before != hermes_runtime_checkout.after else hermes_runtime_bin }}"
+  changed_when: true
+
+- name: Read the installed Hermes CLI version
+  become: true
+  ansible.builtin.command:
+    argv:
+      - "{{ hermes_runtime_bin }}"
+      - --version
+  check_mode: false
+  changed_when: false
+  register: hermes_runtime_installed_version
+  when: not (ansible_check_mode and hermes_runtime_checkout is changed)
+
+- name: Assert the installed CLI reports the pinned release
+  ansible.builtin.assert:
+    quiet: true
+    that:
+      - "('(' ~ hermes_runtime_version ~ ')') in hermes_runtime_installed_version.stdout"
+    fail_msg: >-
+      {{ hermes_runtime_bin }} --version reported
+      "{{ hermes_runtime_installed_version.stdout | trim }}", which does not
+      contain "({{ hermes_runtime_version }})", the pinned release.
+  when: not (ansible_check_mode and hermes_runtime_checkout is changed)

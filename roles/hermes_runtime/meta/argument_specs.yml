@@ -6,124 +6,124 @@ argument_specs:
       - Installs the checksum-verified upstream installer and pins its checkout to a release tag.
       - Renders and starts the Hermes gateway and dashboard units.
     options:
-      hermes_runtime_version:
+      hermes_runtime_version: &hermes_runtime_version
         type: str
         description:
           - Bare upstream release version used to derive the release tag.
-      hermes_runtime_repo_url:
+      hermes_runtime_repo_url: &hermes_runtime_repo_url
         type: str
         description:
           - HTTPS URL of the upstream Hermes Agent repository.
-      hermes_runtime_installer_url:
+      hermes_runtime_installer_url: &hermes_runtime_installer_url
         type: str
         description:
           - Immutable URL of the installer script for the pinned release.
-      hermes_runtime_installer_sha256:
+      hermes_runtime_installer_sha256: &hermes_runtime_installer_sha256
         type: str
         description:
           - SHA-256 checksum required to verify the downloaded installer.
-      hermes_runtime_installer_path:
+      hermes_runtime_installer_path: &hermes_runtime_installer_path
         type: path
         description:
           - Target path for the checksum-verified installer.
-      hermes_runtime_install_dir:
+      hermes_runtime_install_dir: &hermes_runtime_install_dir
         type: path
         description:
           - Target path for the Hermes source checkout.
-      hermes_runtime_bin:
+      hermes_runtime_bin: &hermes_runtime_bin
         type: path
         description:
           - Path to the installed Hermes CLI.
-      hermes_runtime_user:
+      hermes_runtime_user: &hermes_runtime_user
         type: str
         required: true
         description:
           - Account that runs the gateway and dashboard services.
-      hermes_runtime_group:
+      hermes_runtime_group: &hermes_runtime_group
         type: str
         required: true
         description:
           - Group that runs the gateway and dashboard services.
-      hermes_runtime_uid:
+      hermes_runtime_uid: &hermes_runtime_uid
         type: int
         required: true
         description:
           - Numeric UID used to order the gateway after the user's systemd session.
-      hermes_runtime_hermes_home:
+      hermes_runtime_hermes_home: &hermes_runtime_hermes_home
         type: path
         required: true
         description:
           - Hermes home used as the working directory and HERMES_HOME value.
-      hermes_runtime_environment_file:
+      hermes_runtime_environment_file: &hermes_runtime_environment_file
         type: path
         required: true
         description:
           - Optional systemd environment file loaded by both services.
-      hermes_runtime_dashboard_web_dist:
+      hermes_runtime_dashboard_web_dist: &hermes_runtime_dashboard_web_dist
         type: path
         description:
           - Path to the Hermes dashboard web asset directory.
-      hermes_runtime_dashboard_host:
+      hermes_runtime_dashboard_host: &hermes_runtime_dashboard_host
         type: str
         required: true
         description:
           - Address or host value passed to the dashboard CLI.
-      hermes_runtime_dashboard_port:
+      hermes_runtime_dashboard_port: &hermes_runtime_dashboard_port
         type: int
         required: true
         description:
           - TCP port passed to the dashboard CLI.
-      hermes_runtime_gateway_cmd:
+      hermes_runtime_gateway_cmd: &hermes_runtime_gateway_cmd
         type: str
         required: true
         description:
           - Full command used to start the gateway process.
-      hermes_runtime_unit_restart_interval_sec:
+      hermes_runtime_unit_restart_interval_sec: &hermes_runtime_unit_restart_interval_sec
         type: int
         required: true
         description:
           - systemd start-limit interval in seconds for both services.
-      hermes_runtime_unit_restart_burst:
+      hermes_runtime_unit_restart_burst: &hermes_runtime_unit_restart_burst
         type: int
         required: true
         description:
           - systemd start-limit burst for both services.
-      hermes_runtime_restart:
+      hermes_runtime_restart: &hermes_runtime_restart
         type: str
         required: true
         description:
           - systemd Restart policy for both services.
-      hermes_runtime_restart_sec:
+      hermes_runtime_restart_sec: &hermes_runtime_restart_sec
         type: str
         required: true
         description:
           - Delay before systemd restarts either service.
-      hermes_runtime_systemd_unit_dir:
+      hermes_runtime_systemd_unit_dir: &hermes_runtime_systemd_unit_dir
         type: path
         description:
           - Directory for the systemd unit files.
-      hermes_runtime_gateway_unit_path:
+      hermes_runtime_gateway_unit_path: &hermes_runtime_gateway_unit_path
         type: path
         description:
           - Destination path for the gateway unit.
-      hermes_runtime_dashboard_unit_path:
+      hermes_runtime_dashboard_unit_path: &hermes_runtime_dashboard_unit_path
         type: path
         description:
           - Destination path for the dashboard unit.
-      hermes_runtime_gateway_restart_handler:
+      hermes_runtime_gateway_restart_handler: &hermes_runtime_gateway_restart_handler
         type: str
         description:
           - Handler name notified when the gateway unit changes.
-      hermes_runtime_dashboard_restart_handler:
+      hermes_runtime_dashboard_restart_handler: &hermes_runtime_dashboard_restart_handler
         type: str
         description:
           - Handler name notified when the dashboard unit changes.
-      hermes_runtime_unit_on_failure:
+      hermes_runtime_unit_on_failure: &hermes_runtime_unit_on_failure
         type: str
         default: ""
         description:
           - Optional systemd OnFailure unit configured on both services.
-      hermes_runtime_gateway_environment:
+      hermes_runtime_gateway_environment: &hermes_runtime_gateway_environment
         type: list
         elements: dict
         default: []
@@ -136,7 +136,7 @@ argument_specs:
             required: true
         description:
           - Additional gateway Environment entries rendered in list order.
-      hermes_runtime_dashboard_environment:
+      hermes_runtime_dashboard_environment: &hermes_runtime_dashboard_environment
         type: list
         elements: dict
         default: []
@@ -149,8 +149,52 @@ argument_specs:
             required: true
         description:
           - Additional dashboard Environment entries rendered in list order.
-      hermes_runtime_gateway_after_user_manager:
+      hermes_runtime_gateway_after_user_manager: &hermes_runtime_gateway_after_user_manager
         type: bool
         default: false
         description:
           - Order and pull in the gateway after the service user's systemd manager.
+  install:
+    short_description: Install a pinned Hermes Agent runtime.
+    description:
+      - Downloads and verifies the upstream installer, pins the checkout to a release tag, and verifies the CLI version.
+    options:
+      hermes_runtime_version: *hermes_runtime_version
+      hermes_runtime_version_tag:
+        type: str
+        description:
+          - Release tag used by the installer and source checkout; defaults to the selected version.
+      hermes_runtime_repo_url: *hermes_runtime_repo_url
+      hermes_runtime_installer_url: *hermes_runtime_installer_url
+      hermes_runtime_installer_sha256: *hermes_runtime_installer_sha256
+      hermes_runtime_installer_path: *hermes_runtime_installer_path
+      hermes_runtime_install_dir: *hermes_runtime_install_dir
+      hermes_runtime_bin: *hermes_runtime_bin
+  units:
+    short_description: Render and start the Hermes gateway and dashboard units.
+    description:
+      - Renders both systemd unit files and enables and starts their services.
+    options:
+      hermes_runtime_bin: *hermes_runtime_bin
+      hermes_runtime_user: *hermes_runtime_user
+      hermes_runtime_group: *hermes_runtime_group
+      hermes_runtime_uid: *hermes_runtime_uid
+      hermes_runtime_hermes_home: *hermes_runtime_hermes_home
+      hermes_runtime_environment_file: *hermes_runtime_environment_file
+      hermes_runtime_dashboard_web_dist: *hermes_runtime_dashboard_web_dist
+      hermes_runtime_dashboard_host: *hermes_runtime_dashboard_host
+      hermes_runtime_dashboard_port: *hermes_runtime_dashboard_port
+      hermes_runtime_gateway_cmd: *hermes_runtime_gateway_cmd
+      hermes_runtime_unit_restart_interval_sec: *hermes_runtime_unit_restart_interval_sec
+      hermes_runtime_unit_restart_burst: *hermes_runtime_unit_restart_burst
+      hermes_runtime_restart: *hermes_runtime_restart
+      hermes_runtime_restart_sec: *hermes_runtime_restart_sec
+      hermes_runtime_systemd_unit_dir: *hermes_runtime_systemd_unit_dir
+      hermes_runtime_gateway_unit_path: *hermes_runtime_gateway_unit_path
+      hermes_runtime_dashboard_unit_path: *hermes_runtime_dashboard_unit_path
+      hermes_runtime_gateway_restart_handler: *hermes_runtime_gateway_restart_handler
+      hermes_runtime_dashboard_restart_handler: *hermes_runtime_dashboard_restart_handler
+      hermes_runtime_unit_on_failure: *hermes_runtime_unit_on_failure
+      hermes_runtime_gateway_environment: *hermes_runtime_gateway_environment
+      hermes_runtime_dashboard_environment: *hermes_runtime_dashboard_environment
+      hermes_runtime_gateway_after_user_manager: *hermes_runtime_gateway_after_user_manager

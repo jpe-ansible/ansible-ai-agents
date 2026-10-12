@@ -61,3 +61,25 @@ upstream installer and systemd.
         hermes_runtime_restart: always
         hermes_runtime_restart_sec: 5s
 ```
+
+## Separate installation and unit deployment
+
+Use the `install` entry point before consumer-owned source patches, configuration,
+or prechecks, then call `units` when those tasks are complete:
+
+```yaml
+- name: Install Hermes runtime
+  ansible.builtin.include_role:
+    name: dryvist.ai_agents.hermes_runtime
+    tasks_from: install
+
+# Run consumer-owned patch, configuration, and precheck tasks here.
+
+- name: Deploy Hermes runtime units
+  ansible.builtin.include_role:
+    name: dryvist.ai_agents.hermes_runtime
+    tasks_from: units
+```
+
+The existing role call still runs installation followed by unit deployment. Each
+`include_role` entry point also loads the role's handlers into the play.
