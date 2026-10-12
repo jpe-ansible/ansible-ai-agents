@@ -1,0 +1,46 @@
+---
+name: Disclosure Gate
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  secrets-present:
+    name: Check disclosure secrets
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    outputs:
+      present: ${{ steps.check.outputs.present }}
+    steps:
+      - name: Check required secrets
+        id: check
+        env:
+          HAS: >-
+            ${{ secrets.DISCLOSURE_DENYLIST != '' && secrets.GITLEAKS_PRIVATE_CONFIG != '' &&
+            secrets.GITLEAKS_LICENSE_KEY != '' }}
+        run: |
+          echo "present=$HAS" >> "$GITHUB_OUTPUT"
+          if [ "$HAS" != "true" ]; then
+            echo "::notice::Disclosure Gate skipped because required secrets are unavailable."
+          fi
+
+  disclosure-gate:
+    needs: secrets-present
+    if: needs.secrets-present.outputs.present == 'true'
+    permissions:
+      contents: read
+      pull-requests: read
+    uses: dryvist/.github/.github/workflows/_disclosure-gate.yml@74e4e37bd0c362dd145ad0537361084336c8ff55 # v1.14.1
+    secrets:
+      GITLEAKS_PRIVATE_CONFIG: ${{ secrets.GITLEAKS_PRIVATE_CONFIG }}
+      GITLEAKS_LICENSE_KEY: ${{ secrets.GITLEAKS_LICENSE_KEY }}
+      DISCLOSURE_DENYLIST: ${{ secrets.DISCLOSURE_DENYLIST }}

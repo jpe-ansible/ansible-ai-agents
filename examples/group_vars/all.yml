@@ -1,0 +1,38 @@
+---
+agent_base_agents:
+  - name: orchestrator-atlas
+    display: Atlas Orchestrator
+    owns: []
+    purpose: Coordinate agent requests.
+  - name: splunk-sentinel
+    display: Sentinel Observability
+    owns:
+      - splunk
+    purpose: Review observability requests.
+  - name: cribl-conduit
+    display: Conduit Data Flow
+    owns:
+      - cribl
+    purpose: Review data flow requests.
+  - name: github-forge
+    display: Forge Source Control
+    owns:
+      - github
+    purpose: Review source control requests.
+  - name: infra-anvil
+    display: Anvil Infrastructure
+    owns: []
+    purpose: Review infrastructure requests.
+  - name: docs-scribe
+    display: Scribe Documentation
+    owns:
+      - docs
+    purpose: Review documentation requests.
+  - name: olly-lens
+    display: Lens Review
+    owns: []
+    purpose: Review agent behavior.
+  - name: asst-aide
+    display: Aide Assistance
+    owns: []
+    purpose: Handle general assistance requests.
