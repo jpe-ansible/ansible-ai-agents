@@ -47,7 +47,7 @@ jobs:
         run: SKIP=ansible-lint pre-commit run --all-files --show-diff-on-failure
 
   contract:
-    name: Roster contract
+    name: Roster and runtime contracts
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -69,6 +69,9 @@ jobs:
 
       - name: Run roster contract test
         run: ansible-playbook -i examples/inventory.yml tests/contract.yml
+
+      - name: Run Hermes runtime render test
+        run: ansible-playbook -i examples/inventory.yml tests/hermes_runtime_render.yml
 
   gate:
     name: Merge Gate

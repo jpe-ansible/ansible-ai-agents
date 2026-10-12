@@ -1,0 +1,211 @@
+---
+- name: Render Hermes runtime systemd units
+  hosts: localhost
+  gather_facts: false
+  vars:
+    ansible_python_interpreter: "{{ ansible_playbook_python }}"
+    hermes_runtime_user: example-agent
+    hermes_runtime_group: example-group
+    hermes_runtime_uid: 1001
+    hermes_runtime_hermes_home: /var/lib/example.com/.hermes
+    hermes_runtime_environment_file: /var/lib/example.com/.hermes/.env
+    hermes_runtime_dashboard_web_dist: /usr/local/lib/hermes-agent/hermes_cli/web_dist
+    hermes_runtime_dashboard_host: example.com
+    hermes_runtime_dashboard_port: 8080
+    hermes_runtime_gateway_cmd: /usr/local/bin/hermes gateway run --replace
+    hermes_runtime_bin: /usr/local/bin/hermes
+    hermes_runtime_unit_restart_interval_sec: 300
+    hermes_runtime_unit_restart_burst: 5
+    hermes_runtime_restart: always
+    hermes_runtime_restart_sec: 5s
+    hermes_runtime_unit_on_failure: hermes-unit-alert@%n.service
+    hermes_runtime_gateway_environment:
+      - name: HERMES_GITHUB_APP_SLUG
+        value: example-agent
+      - name: HERMES_TRUST_BOUNDARY
+        value: example-boundary
+    hermes_runtime_dashboard_environment:
+      - name: HERMES_DASHBOARD_MODE
+        value: interactive
+    hermes_runtime_gateway_after_user_manager: true
+  tasks:
+    - name: Create a temporary unit render directory
+      ansible.builtin.tempfile:
+        state: directory
+        prefix: hermes-runtime-render-
+      register: hermes_runtime_render_dir
+
+    - name: Render the configured gateway unit
+      ansible.builtin.template:
+        src: "{{ playbook_dir }}/../roles/hermes_runtime/templates/hermes-gateway.service.j2"
+        dest: "{{ hermes_runtime_render_dir.path }}/hermes-gateway.service"
+        mode: "0644"
+
+    - name: Render the configured dashboard unit
+      ansible.builtin.template:
+        src: "{{ playbook_dir }}/../roles/hermes_runtime/templates/hermes-dashboard.service.j2"
+        dest: "{{ hermes_runtime_render_dir.path }}/hermes-dashboard.service"
+        mode: "0644"
+
+    - name: Render the gateway unit with all optional directives at defaults
+      ansible.builtin.template:
+        src: "{{ playbook_dir }}/../roles/hermes_runtime/templates/hermes-gateway.service.j2"
+        dest: "{{ hermes_runtime_render_dir.path }}/hermes-gateway-defaults.service"
+        mode: "0644"
+      vars:
+        hermes_runtime_unit_on_failure: ""
+        hermes_runtime_gateway_environment: []
+        hermes_runtime_gateway_after_user_manager: false
+
+    - name: Render the dashboard unit with all optional directives at defaults
+      ansible.builtin.template:
+        src: "{{ playbook_dir }}/../roles/hermes_runtime/templates/hermes-dashboard.service.j2"
+        dest: "{{ hermes_runtime_render_dir.path }}/hermes-dashboard-defaults.service"
+        mode: "0644"
+      vars:
+        hermes_runtime_unit_on_failure: ""
+        hermes_runtime_dashboard_environment: []
+
+    - name: Read the configured and default unit renders
+      ansible.builtin.set_fact:
+        hermes_runtime_gateway_rendered: >-
+          {{ lookup('file', hermes_runtime_render_dir.path ~ '/hermes-gateway.service') }}
+        hermes_runtime_dashboard_rendered: >-
+          {{ lookup('file', hermes_runtime_render_dir.path ~ '/hermes-dashboard.service') }}
+        hermes_runtime_gateway_defaults_rendered: >-
+          {{ lookup('file', hermes_runtime_render_dir.path ~ '/hermes-gateway-defaults.service') }}
+        hermes_runtime_dashboard_defaults_rendered: >-
+          {{ lookup('file', hermes_runtime_render_dir.path ~ '/hermes-dashboard-defaults.service') }}
+
+    - name: Split configured and default units into sections
+      ansible.builtin.set_fact:
+        hermes_runtime_gateway_unit_section: "{{ hermes_runtime_gateway_rendered.split('[Service]') | first }}"
+        hermes_runtime_gateway_service_section: >-
+          {{ hermes_runtime_gateway_rendered.split('[Service]')[1].split('[Install]') | first }}
+        hermes_runtime_dashboard_unit_section: "{{ hermes_runtime_dashboard_rendered.split('[Service]') | first }}"
+        hermes_runtime_dashboard_service_section: >-
+          {{ hermes_runtime_dashboard_rendered.split('[Service]')[1].split('[Install]') | first }}
+        hermes_runtime_gateway_defaults_unit_section: >-
+          {{ hermes_runtime_gateway_defaults_rendered.split('[Service]') | first }}
+        hermes_runtime_gateway_defaults_service_section: >-
+          {{ hermes_runtime_gateway_defaults_rendered.split('[Service]')[1].split('[Install]') | first }}
+        hermes_runtime_dashboard_defaults_unit_section: >-
+          {{ hermes_runtime_dashboard_defaults_rendered.split('[Service]') | first }}
+        hermes_runtime_dashboard_defaults_service_section: >-
+          {{ hermes_runtime_dashboard_defaults_rendered.split('[Service]')[1].split('[Install]') | first }}
+
+    - name: Assert the configured units use the fixed example inputs
+      ansible.builtin.assert:
+        quiet: true
+        that:
+          - >-
+            'ExecStart=/usr/local/bin/hermes gateway run --replace' in
+            hermes_runtime_gateway_rendered
+          - "'User=example-agent' in hermes_runtime_gateway_rendered"
+          - "'Group=example-group' in hermes_runtime_gateway_rendered"
+          - >-
+            'EnvironmentFile=-/var/lib/example.com/.hermes/.env' in
+            hermes_runtime_gateway_rendered
+          - "'Restart=always' in hermes_runtime_gateway_rendered"
+          - "'RestartSec=5s' in hermes_runtime_gateway_rendered"
+          - >-
+            'ExecStart=/usr/local/bin/hermes dashboard --host example.com --port 8080 --no-open' in
+            hermes_runtime_dashboard_rendered
+          - "'User=example-agent' in hermes_runtime_dashboard_rendered"
+          - "'Group=example-group' in hermes_runtime_dashboard_rendered"
+          - >-
+            'EnvironmentFile=-/var/lib/example.com/.hermes/.env' in
+            hermes_runtime_dashboard_rendered
+          - "'Restart=always' in hermes_runtime_dashboard_rendered"
+          - "'RestartSec=5s' in hermes_runtime_dashboard_rendered"
+
+    - name: Assert configured optional directives appear once in their sections
+      ansible.builtin.assert:
+        quiet: true
+        that:
+          - >-
+            hermes_runtime_gateway_unit_section |
+            regex_findall('(?m)^OnFailure=hermes-unit-alert@%n\\.service$') | length == 1
+          - >-
+            hermes_runtime_dashboard_unit_section |
+            regex_findall('(?m)^OnFailure=hermes-unit-alert@%n\\.service$') | length == 1
+          - >-
+            hermes_runtime_gateway_unit_section |
+            regex_findall('(?m)^After=user@1001\\.service$') | length == 1
+          - >-
+            hermes_runtime_gateway_unit_section |
+            regex_findall('(?m)^Wants=user@1001\\.service$') | length == 1
+          - >-
+            hermes_runtime_gateway_service_section |
+            regex_findall('(?m)^Environment=HERMES_GITHUB_APP_SLUG=example-agent$') |
+            length == 1
+          - >-
+            hermes_runtime_gateway_service_section |
+            regex_findall('(?m)^Environment=HERMES_TRUST_BOUNDARY=example-boundary$') |
+            length == 1
+          - >-
+            hermes_runtime_gateway_service_section.index('Environment=HERMES_HOME=') <
+            hermes_runtime_gateway_service_section.index('Environment=HERMES_GITHUB_APP_SLUG=')
+          - >-
+            hermes_runtime_gateway_service_section.index('Environment=HERMES_GITHUB_APP_SLUG=') <
+            hermes_runtime_gateway_service_section.index('Environment=HERMES_TRUST_BOUNDARY=')
+          - >-
+            hermes_runtime_dashboard_service_section |
+            regex_findall('(?m)^Environment=HERMES_DASHBOARD_MODE=interactive$') | length == 1
+          - >-
+            hermes_runtime_dashboard_service_section.index('Environment=HERMES_HOME=') <
+            hermes_runtime_dashboard_service_section.index('Environment=HERMES_DASHBOARD_MODE=')
+          - >-
+            hermes_runtime_dashboard_service_section.index('Environment=HERMES_DASHBOARD_MODE=') <
+            hermes_runtime_dashboard_service_section.index('Environment=HERMES_WEB_DIST=')
+
+    - name: Assert optional directives are absent with default values
+      ansible.builtin.assert:
+        quiet: true
+        that:
+          - "'OnFailure=' not in hermes_runtime_gateway_defaults_unit_section"
+          - "'OnFailure=' not in hermes_runtime_dashboard_defaults_unit_section"
+          - "'After=user@1001.service' not in hermes_runtime_gateway_defaults_unit_section"
+          - "'Wants=user@1001.service' not in hermes_runtime_gateway_defaults_unit_section"
+          - >-
+            'Environment=HERMES_GITHUB_APP_SLUG=' not in
+            hermes_runtime_gateway_defaults_service_section
+          - >-
+            'Environment=HERMES_TRUST_BOUNDARY=' not in
+            hermes_runtime_gateway_defaults_service_section
+          - >-
+            'Environment=HERMES_GITHUB_APP_SLUG=' not in
+            hermes_runtime_dashboard_defaults_service_section
+          - >-
+            'Environment=HERMES_TRUST_BOUNDARY=' not in
+            hermes_runtime_dashboard_defaults_service_section
+          - >-
+            'Environment=HERMES_DASHBOARD_MODE=' not in
+            hermes_runtime_dashboard_defaults_service_section
+
+    - name: Assert source-template unit lines remain present
+      ansible.builtin.assert:
+        quiet: true
+        that:
+          - "'StartLimitIntervalSec=300' in hermes_runtime_gateway_rendered"
+          - "'StartLimitBurst=5' in hermes_runtime_gateway_rendered"
+          - "'WorkingDirectory=/var/lib/example.com/.hermes' in hermes_runtime_gateway_rendered"
+          - >-
+            'Environment=HERMES_HOME=/var/lib/example.com/.hermes' in
+            hermes_runtime_gateway_rendered
+          - >-
+            'Description=Hermes Dashboard (authenticated interactive UI)' in
+            hermes_runtime_dashboard_rendered
+          - >-
+            'After=network-online.target hermes-gateway.service' in
+            hermes_runtime_dashboard_rendered
+          - "'StartLimitIntervalSec=300' in hermes_runtime_dashboard_rendered"
+          - "'StartLimitBurst=5' in hermes_runtime_dashboard_rendered"
+          - >-
+            'Environment=HERMES_WEB_DIST=/usr/local/lib/hermes-agent/hermes_cli/web_dist' in
+            hermes_runtime_dashboard_rendered
+
+    - name: Remove the temporary render directory
+      ansible.builtin.file:
+        path: "{{ hermes_runtime_render_dir.path }}"
+        state: absent
