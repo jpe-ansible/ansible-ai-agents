@@ -1,0 +1,34 @@
+{{ ansible_managed | comment }}
+[Unit]
+Description=Hermes Agent gateway (autonomous agent daemon + cron + Kanban dispatcher)
+After=network-online.target
+Wants=network-online.target
+{% if hermes_runtime_gateway_after_user_manager | bool %}
+# The user's own D-Bus session must already be up for user-scoped workers.
+After=user@{{ hermes_runtime_uid }}.service
+Wants=user@{{ hermes_runtime_uid }}.service
+{% endif %}
+# StartLimit* belong in [Unit].
+StartLimitIntervalSec={{ hermes_runtime_unit_restart_interval_sec }}
+StartLimitBurst={{ hermes_runtime_unit_restart_burst }}
+{% if hermes_runtime_unit_on_failure | length > 0 %}
+OnFailure={{ hermes_runtime_unit_on_failure }}
+{% endif %}
+
+[Service]
+Type=simple
+User={{ hermes_runtime_user }}
+Group={{ hermes_runtime_group }}
+# Keep the working directory at HERMES_HOME so relative runtime files resolve.
+WorkingDirectory={{ hermes_runtime_hermes_home }}
+Environment=HERMES_HOME={{ hermes_runtime_hermes_home }}
+{% for item in hermes_runtime_gateway_environment %}
+Environment={{ item.name }}={{ item.value }}
+{% endfor %}
+EnvironmentFile=-{{ hermes_runtime_environment_file }}
+ExecStart={{ hermes_runtime_gateway_cmd }}
+Restart={{ hermes_runtime_restart }}
+RestartSec={{ hermes_runtime_restart_sec }}
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,29 @@
+{{ ansible_managed | comment }}
+[Unit]
+Description=Hermes Dashboard (authenticated interactive UI)
+After=network-online.target hermes-gateway.service
+Wants=network-online.target
+# StartLimit* belong in [Unit].
+StartLimitIntervalSec={{ hermes_runtime_unit_restart_interval_sec }}
+StartLimitBurst={{ hermes_runtime_unit_restart_burst }}
+{% if hermes_runtime_unit_on_failure | length > 0 %}
+OnFailure={{ hermes_runtime_unit_on_failure }}
+{% endif %}
+
+[Service]
+Type=simple
+User={{ hermes_runtime_user }}
+Group={{ hermes_runtime_group }}
+WorkingDirectory={{ hermes_runtime_hermes_home }}
+Environment=HERMES_HOME={{ hermes_runtime_hermes_home }}
+{% for item in hermes_runtime_dashboard_environment %}
+Environment={{ item.name }}={{ item.value }}
+{% endfor %}
+Environment=HERMES_WEB_DIST={{ hermes_runtime_dashboard_web_dist }}
+EnvironmentFile=-{{ hermes_runtime_environment_file }}
+ExecStart={{ hermes_runtime_bin }} dashboard --host {{ hermes_runtime_dashboard_host }} --port {{ hermes_runtime_dashboard_port }} --no-open
+Restart={{ hermes_runtime_restart }}
+RestartSec={{ hermes_runtime_restart_sec }}
+
+[Install]
+WantedBy=multi-user.target

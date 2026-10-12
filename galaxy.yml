@@ -5,7 +5,7 @@ version: 0.0.0  # x-release-please-version
 readme: README.md
 authors:
   - dryvist
-description: A roster contract for separately identified AI agents.
+description: Contracts and runtime support for separately identified AI agents.
 license:
   - Apache-2.0
 tags:
