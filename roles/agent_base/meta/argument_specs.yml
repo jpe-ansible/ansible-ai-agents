@@ -1,0 +1,35 @@
+---
+argument_specs:
+  main:
+    short_description: Define a roster of separately identified agents.
+    description:
+      - Each roster entry describes one agent and the external systems it alone may touch.
+    options:
+      agent_base_agents:
+        type: list
+        elements: dict
+        required: true
+        description:
+          - Agent roster entries.
+        options:
+          name:
+            type: str
+            required: true
+            description:
+              - Lowercase identifier in the form function-persona.
+          display:
+            type: str
+            required: true
+            description:
+              - Human display name.
+          owns:
+            type: list
+            elements: str
+            default: []
+            description:
+              - External systems this agent alone may touch.
+          purpose:
+            type: str
+            required: true
+            description:
+              - One-line agent purpose.

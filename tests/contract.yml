@@ -1,0 +1,89 @@
+---
+- name: Check the valid example roster
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Validate the example roster
+      ansible.builtin.include_role:
+        name: agent_base
+
+- name: Check invalid roster cases
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Initialize expected rejection flags
+      ansible.builtin.set_fact:
+        agent_base_contract_duplicate_owns: false
+        agent_base_contract_invalid_name: false
+        agent_base_contract_missing_field: false
+
+    - name: Negative case - duplicate owns value
+      block:
+        - name: Run role with duplicated owns value
+          ansible.builtin.include_role:
+            name: agent_base
+          vars:
+            agent_base_agents:
+              - name: atlas-orchestrator
+                display: Atlas Orchestrator
+                owns: [shared]
+                purpose: Coordinate agent requests.
+              - name: sentinel-reviewer
+                display: Sentinel Reviewer
+                owns: [shared]
+                purpose: Review requests.
+      rescue:
+        - name: Confirm duplicate owns rejection
+          ansible.builtin.assert:
+            that: "'owns values must be unique' in ansible_failed_result.msg"
+          no_log: true
+        - name: Record duplicate owns rejection
+          ansible.builtin.set_fact:
+            agent_base_contract_duplicate_owns: true
+
+    - name: Negative case - invalid name format
+      block:
+        - name: Run role with invalid name format
+          ansible.builtin.include_role:
+            name: agent_base
+          vars:
+            agent_base_agents:
+              - name: Hermes
+                display: Hermes
+                owns: []
+                purpose: Review requests.
+      rescue:
+        - name: Confirm invalid name rejection
+          ansible.builtin.assert:
+            that: "'names must match lowercase' in ansible_failed_result.msg"
+          no_log: true
+        - name: Record invalid name rejection
+          ansible.builtin.set_fact:
+            agent_base_contract_invalid_name: true
+
+    - name: Negative case - missing required field
+      block:
+        - name: Run role without required purpose field
+          ansible.builtin.include_role:
+            name: agent_base
+          vars:
+            agent_base_agents:
+              - name: atlas-orchestrator
+                display: Atlas Orchestrator
+                owns: []
+      rescue:
+        - name: Confirm required purpose rejection
+          ansible.builtin.assert:
+            that: "'purpose' in ansible_failed_result.msg"
+          no_log: true
+        - name: Record missing field rejection
+          ansible.builtin.set_fact:
+            agent_base_contract_missing_field: true
+
+    - name: Confirm every negative case was rejected as expected
+      ansible.builtin.assert:
+        quiet: true
+        that:
+          - agent_base_contract_duplicate_owns
+          - agent_base_contract_invalid_name
+          - agent_base_contract_missing_field
