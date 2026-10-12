@@ -209,3 +209,48 @@
       ansible.builtin.file:
         path: "{{ hermes_runtime_render_dir.path }}"
         state: absent
+
+- name: Check Hermes runtime entrypoint argument validation
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Initialize expected rejection flags
+      ansible.builtin.set_fact:
+        hermes_runtime_contract_main: false
+        hermes_runtime_contract_units: false
+
+    - name: Negative case - main entry point requires unit inputs
+      block:
+        - name: Run the main entry point without required unit inputs
+          ansible.builtin.include_role:
+            name: hermes_runtime
+      rescue:
+        - name: Confirm main entry point rejection
+          ansible.builtin.assert:
+            that: "'hermes_runtime_user' in ansible_failed_result.msg"
+          no_log: true
+        - name: Record main entry point rejection
+          ansible.builtin.set_fact:
+            hermes_runtime_contract_main: true
+
+    - name: Negative case - units entry point requires a service user
+      block:
+        - name: Run the units entry point without a service user
+          ansible.builtin.include_role:
+            name: hermes_runtime
+            tasks_from: units
+      rescue:
+        - name: Confirm units entry point rejection
+          ansible.builtin.assert:
+            that: "'hermes_runtime_user' in ansible_failed_result.msg"
+          no_log: true
+        - name: Record units entry point rejection
+          ansible.builtin.set_fact:
+            hermes_runtime_contract_units: true
+
+    - name: Confirm every entry point rejected its invalid input
+      ansible.builtin.assert:
+        quiet: true
+        that:
+          - hermes_runtime_contract_main
+          - hermes_runtime_contract_units
