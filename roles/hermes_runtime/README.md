@@ -39,7 +39,7 @@ upstream installer and systemd.
 | `hermes_runtime_dashboard_environment` | list of `{name, value}` | no | Additional dashboard `Environment` entries; defaults to empty. |
 | `hermes_runtime_gateway_after_user_manager` | boolean | no | Order the gateway after the user's systemd manager; defaults to false. |
 
-## Example
+## Usage
 
 ```yaml
 - name: Install Hermes runtime
@@ -62,7 +62,7 @@ upstream installer and systemd.
         hermes_runtime_restart_sec: 5s
 ```
 
-## Separate installation and unit deployment
+## Installation
 
 Use the `install` entry point before consumer-owned source patches, configuration,
 or prechecks, then call `units` when those tasks are complete:
@@ -83,3 +83,10 @@ or prechecks, then call `units` when those tasks are complete:
 
 The existing role call still runs installation followed by unit deployment. Each
 `include_role` entry point also loads the role's handlers into the play.
+
+## Installation change state
+
+The `install` entry point registers `hermes_runtime_checkout` for the tag pin. The
+task is skipped when the installed release already matches, so the variable then
+carries no `before` or `after`. Consumers test `hermes_runtime_checkout is changed`
+and never read those fields.
