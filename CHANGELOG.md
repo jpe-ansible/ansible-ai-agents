@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.1](https://github.com/jpe-ansible/ansible-ai-agents/compare/v1.0.0...v1.0.1) (2026-10-14)
+
+
+### Bug Fixes
+
+* **hermes_runtime:** skip the checkout pin and reinstall when the CLI reports the pinned release ([#12](https://github.com/jpe-ansible/ansible-ai-agents/issues/12)) ([2456a81](https://github.com/jpe-ansible/ansible-ai-agents/commit/2456a817cd80ef5a5619d8f57310aa2c8a6cca45))
+
 ## 1.0.0 (2026-10-13)
 
 
