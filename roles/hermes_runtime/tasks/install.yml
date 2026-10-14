@@ -21,7 +21,17 @@
       - --non-interactive
       - --skip-computer-use
     creates: "{{ hermes_runtime_bin }}"
-  changed_when: true
+
+- name: Read Hermes CLI version before pinning
+  become: true
+  ansible.builtin.command:
+    argv:
+      - "{{ hermes_runtime_bin }}"
+      - --version
+  check_mode: false
+  changed_when: false
+  failed_when: false
+  register: hermes_runtime_installed_version_before_pin
 
 - name: Pin the Hermes checkout to the requested release tag
   become: true
@@ -33,6 +43,10 @@
     depth: 1
     force: true
   register: hermes_runtime_checkout
+  when: >-
+    hermes_runtime_installed_version_before_pin.rc != 0 or
+    ('(' ~ hermes_runtime_version ~ ')') not in
+    (hermes_runtime_installed_version_before_pin.stdout | default(''))
 
 - name: Install or upgrade Hermes when the checkout moved
   become: true
@@ -45,8 +59,15 @@
       - --skip-setup
       - --non-interactive
       - --skip-computer-use
-    creates: "{{ omit if hermes_runtime_checkout.before != hermes_runtime_checkout.after else hermes_runtime_bin }}"
-  changed_when: true
+    creates: >-
+      {{ omit if hermes_runtime_installed_version_before_pin.rc != 0 or
+      ('(' ~ hermes_runtime_version ~ ')') not in
+      (hermes_runtime_installed_version_before_pin.stdout | default(''))
+      else hermes_runtime_bin }}
+  when: >-
+    hermes_runtime_installed_version_before_pin.rc != 0 or
+    ('(' ~ hermes_runtime_version ~ ')') not in
+    (hermes_runtime_installed_version_before_pin.stdout | default(''))
 
 - name: Read the installed Hermes CLI version
   become: true
