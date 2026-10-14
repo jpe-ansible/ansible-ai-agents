@@ -1,4 +1,107 @@
 ---
+- name: Check Hermes runtime install task structure
+  hosts: localhost
+  gather_facts: false
+  vars:
+    hermes_runtime_version_condition: >-
+      hermes_runtime_installed_version_before_pin.rc != 0 or
+      ('(' ~ hermes_runtime_version ~ ')') not in
+      (hermes_runtime_installed_version_before_pin.stdout | default(''))
+  tasks:
+    - name: Read Hermes runtime install tasks
+      ansible.builtin.set_fact:
+        hermes_runtime_install_tasks: >-
+          {{ lookup('file', playbook_dir ~ '/../roles/hermes_runtime/tasks/install.yml') | from_yaml }}
+
+    - name: Assert install task order
+      ansible.builtin.assert:
+        quiet: true
+        that:
+          - >-
+            hermes_runtime_install_tasks | map(attribute='name') | list ==
+            [
+              'Fetch the pinned Hermes installer with checksum verification',
+              'Run the verified installer for a missing Hermes CLI',
+              'Read Hermes CLI version before pinning',
+              'Pin the Hermes checkout to the requested release tag',
+              'Install or upgrade Hermes when the checkout moved',
+              'Read the installed Hermes CLI version',
+              'Assert the installed CLI reports the pinned release'
+            ]
+
+    - name: Select Hermes install and verification tasks
+      ansible.builtin.set_fact:
+        hermes_runtime_initial_install_task: >-
+          {{ hermes_runtime_install_tasks |
+          selectattr('name', 'equalto', 'Run the verified installer for a missing Hermes CLI') |
+          first }}
+        hermes_runtime_pre_pin_version_task: >-
+          {{ hermes_runtime_install_tasks |
+          selectattr('name', 'equalto', 'Read Hermes CLI version before pinning') |
+          first }}
+        hermes_runtime_pin_task: >-
+          {{ hermes_runtime_install_tasks |
+          selectattr('name', 'equalto', 'Pin the Hermes checkout to the requested release tag') |
+          first }}
+        hermes_runtime_upgrade_task: >-
+          {{ hermes_runtime_install_tasks |
+          selectattr('name', 'equalto', 'Install or upgrade Hermes when the checkout moved') |
+          first }}
+        hermes_runtime_postinstall_version_task: >-
+          {{ hermes_runtime_install_tasks |
+          selectattr('name', 'equalto', 'Read the installed Hermes CLI version') |
+          first }}
+        hermes_runtime_postinstall_assert_task: >-
+          {{ hermes_runtime_install_tasks |
+          selectattr('name', 'equalto', 'Assert the installed CLI reports the pinned release') |
+          first }}
+
+    - name: Assert installer and checkout tasks use the version gate
+      ansible.builtin.assert:
+        quiet: true
+        that:
+          - (hermes_runtime_initial_install_task.changed_when | default(false)) != true
+          - hermes_runtime_pre_pin_version_task.register == 'hermes_runtime_installed_version_before_pin'
+          - hermes_runtime_pre_pin_version_task.changed_when == false
+          - hermes_runtime_pre_pin_version_task.failed_when == false
+          - hermes_runtime_pre_pin_version_task.check_mode == false
+          - hermes_runtime_pin_task.when == hermes_runtime_version_condition
+          - hermes_runtime_upgrade_task.when == hermes_runtime_version_condition
+          - (hermes_runtime_upgrade_task.changed_when | default(false)) != true
+          - >-
+            'hermes_runtime_installed_version_before_pin.rc != 0' in
+            hermes_runtime_upgrade_task['ansible.builtin.command'].creates
+          - >-
+            'not in' in
+            hermes_runtime_upgrade_task['ansible.builtin.command'].creates
+
+    - name: Assert post-install verification tasks remain unchanged
+      ansible.builtin.assert:
+        quiet: true
+        that:
+          - >-
+            hermes_runtime_postinstall_version_task['ansible.builtin.command'].argv[0] ==
+            ('{' ~ '{ hermes_runtime_bin }}')
+          - hermes_runtime_postinstall_version_task['ansible.builtin.command'].argv[1] == '--version'
+          - hermes_runtime_postinstall_version_task.check_mode == false
+          - hermes_runtime_postinstall_version_task.changed_when == false
+          - hermes_runtime_postinstall_version_task.register == 'hermes_runtime_installed_version'
+          - >-
+            hermes_runtime_postinstall_version_task.when ==
+            'not (ansible_check_mode and hermes_runtime_checkout is changed)'
+          - hermes_runtime_postinstall_assert_task['ansible.builtin.assert'].quiet == true
+          - >-
+            hermes_runtime_postinstall_assert_task['ansible.builtin.assert'].that ==
+            ["('(' ~ hermes_runtime_version ~ ')') in hermes_runtime_installed_version.stdout"]
+          - >-
+            hermes_runtime_postinstall_assert_task['ansible.builtin.assert'].fail_msg ==
+            ('{' ~ '{ hermes_runtime_bin }} --version reported "' ~
+            '{' ~ '{ hermes_runtime_installed_version.stdout | trim }}", which does not contain "' ~
+            '(' ~ '{' ~ '{ hermes_runtime_version }})", the pinned release.')
+          - >-
+            hermes_runtime_postinstall_assert_task.when ==
+            'not (ansible_check_mode and hermes_runtime_checkout is changed)'
+
 - name: Render Hermes runtime systemd units
   hosts: localhost
   gather_facts: false
