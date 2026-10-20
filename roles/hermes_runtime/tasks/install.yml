@@ -43,10 +43,12 @@
     depth: 1
     force: true
   register: hermes_runtime_checkout
-  when: >-
-    hermes_runtime_installed_version_before_pin.rc != 0 or
-    ('(' ~ hermes_runtime_version ~ ')') not in
-    (hermes_runtime_installed_version_before_pin.stdout | default(''))
+  when:
+    - >-
+      hermes_runtime_installed_version_before_pin.rc != 0 or
+      ('(' ~ hermes_runtime_version ~ ')') not in
+      (hermes_runtime_installed_version_before_pin.stdout | default(''))
+    - not ansible_check_mode or hermes_runtime_installed_version_before_pin.rc == 0
 
 - name: Install or upgrade Hermes when the checkout moved
   become: true
@@ -64,10 +66,12 @@
       ('(' ~ hermes_runtime_version ~ ')') not in
       (hermes_runtime_installed_version_before_pin.stdout | default(''))
       else hermes_runtime_bin }}
-  when: >-
-    hermes_runtime_installed_version_before_pin.rc != 0 or
-    ('(' ~ hermes_runtime_version ~ ')') not in
-    (hermes_runtime_installed_version_before_pin.stdout | default(''))
+  when:
+    - >-
+      hermes_runtime_installed_version_before_pin.rc != 0 or
+      ('(' ~ hermes_runtime_version ~ ')') not in
+      (hermes_runtime_installed_version_before_pin.stdout | default(''))
+    - not ansible_check_mode or hermes_runtime_installed_version_before_pin.rc == 0
 
 - name: Read the installed Hermes CLI version
   become: true
@@ -78,7 +82,9 @@
   check_mode: false
   changed_when: false
   register: hermes_runtime_installed_version
-  when: not (ansible_check_mode and hermes_runtime_checkout is changed)
+  when:
+    - not (ansible_check_mode and hermes_runtime_checkout is changed)
+    - not ansible_check_mode or hermes_runtime_installed_version_before_pin.rc == 0
 
 - name: Assert the installed CLI reports the pinned release
   ansible.builtin.assert:
@@ -89,4 +95,6 @@
       {{ hermes_runtime_bin }} --version reported
       "{{ hermes_runtime_installed_version.stdout | trim }}", which does not
       contain "({{ hermes_runtime_version }})", the pinned release.
-  when: not (ansible_check_mode and hermes_runtime_checkout is changed)
+  when:
+    - not (ansible_check_mode and hermes_runtime_checkout is changed)
+    - not ansible_check_mode or hermes_runtime_installed_version_before_pin.rc == 0
