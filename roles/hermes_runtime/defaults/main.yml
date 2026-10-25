@@ -7,6 +7,7 @@ hermes_runtime_installer_url: >-
   hermes_runtime_version_tag }}/scripts/install.sh
 hermes_runtime_installer_sha256: "5854b15670b51a8daae8f59ddfa917062de9f74be261eb73b4b8d719710f8968"
 hermes_runtime_installer_path: "/usr/local/lib/hermes-agent-installer-{{ hermes_runtime_version }}.sh"
+hermes_runtime_installer_timeout: 900
 hermes_runtime_install_dir: /usr/local/lib/hermes-agent
 hermes_runtime_bin: /usr/local/bin/hermes
 hermes_runtime_dashboard_web_dist: "{{ hermes_runtime_install_dir }}/hermes_cli/web_dist"

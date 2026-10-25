@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.2](https://github.com/jpe-ansible/ansible-ai-agents/compare/v1.0.1...v1.0.2) (2026-10-20)
+
+
+### Bug Fixes
+
+* **hermes_runtime:** skip the checkout pin check mode cannot predict ([#20](https://github.com/jpe-ansible/ansible-ai-agents/issues/20)) ([bd620cd](https://github.com/jpe-ansible/ansible-ai-agents/commit/bd620cd3f48a1ef083859366aa1c9b7d5e1bc92b))
+
 ## [1.0.1](https://github.com/jpe-ansible/ansible-ai-agents/compare/v1.0.0...v1.0.1) (2026-10-14)
 
 

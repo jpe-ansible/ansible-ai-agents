@@ -4,3 +4,4 @@
 
 - name: Deploy Hermes runtime units
   ansible.builtin.import_tasks: units.yml
+  when: not ansible_check_mode or hermes_runtime_installed_version_before_pin.rc == 0
