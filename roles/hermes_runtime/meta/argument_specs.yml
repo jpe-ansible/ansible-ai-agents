@@ -26,6 +26,10 @@ argument_specs:
         type: path
         description:
           - Target path for the checksum-verified installer.
+      hermes_runtime_installer_timeout: &hermes_runtime_installer_timeout
+        type: int
+        description:
+          - Seconds the first-install run may take before the task fails for that host.
       hermes_runtime_install_dir: &hermes_runtime_install_dir
         type: path
         description:
@@ -168,6 +172,7 @@ argument_specs:
       hermes_runtime_installer_url: *hermes_runtime_installer_url
       hermes_runtime_installer_sha256: *hermes_runtime_installer_sha256
       hermes_runtime_installer_path: *hermes_runtime_installer_path
+      hermes_runtime_installer_timeout: *hermes_runtime_installer_timeout
       hermes_runtime_install_dir: *hermes_runtime_install_dir
       hermes_runtime_bin: *hermes_runtime_bin
   units:

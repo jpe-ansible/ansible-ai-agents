@@ -70,6 +70,7 @@
         quiet: true
         that:
           - (hermes_runtime_initial_install_task.changed_when | default(false)) != true
+          - "'timeout' in hermes_runtime_initial_install_task"
           - hermes_runtime_pre_pin_version_task.register == 'hermes_runtime_installed_version_before_pin'
           - hermes_runtime_pre_pin_version_task.changed_when == false
           - hermes_runtime_pre_pin_version_task.failed_when == false
