@@ -21,6 +21,8 @@
       - --non-interactive
       - --skip-computer-use
     creates: "{{ hermes_runtime_bin }}"
+  # A hung installer fails this host alone instead of stalling every host in the play.
+  timeout: "{{ hermes_runtime_installer_timeout }}"
 
 - name: Read Hermes CLI version before pinning
   become: true
