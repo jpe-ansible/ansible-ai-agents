@@ -1,0 +1,80 @@
+---
+- name: Validate Hermes plugin names, unique names, archive pins and requirement pins
+  ansible.builtin.assert:
+    quiet: true
+    that:
+      - hermes_runtime_plugins | map(attribute='name') | unique | list | length == hermes_runtime_plugins | length
+      - >-
+        hermes_runtime_plugins | map(attribute='name')
+        | select('match', '^[A-Za-z0-9][A-Za-z0-9._-]*$') | list | length == hermes_runtime_plugins | length
+      - >-
+        hermes_runtime_plugins | selectattr('archive_url', 'defined') | map(attribute='archive_sha256')
+        | select('match', '^[A-Fa-f0-9]{64}$') | list | length ==
+        hermes_runtime_plugins | selectattr('archive_url', 'defined') | list | length
+      - >-
+        hermes_runtime_plugins | selectattr('archive_url', 'defined') | map(attribute='archive_subdir')
+        | select('match', '^(?!\.?$)(?!/)(?!.*(?:^|/)\.\.(?:/|$)).+$') | list | length ==
+        hermes_runtime_plugins | selectattr('archive_url', 'defined') | list | length
+      - >-
+        hermes_runtime_plugins | selectattr('requirements', 'defined') | map(attribute='requirements')
+        | flatten | reject('search', '==') | list | length == 0
+    fail_msg: >-
+      Hermes plugin names must be unique and match ^[A-Za-z0-9][A-Za-z0-9._-]*$, archive_sha256 must be
+      64 hex characters, archive_subdir must be a relative path inside the archive, and every requirement must
+      be a pinned pip spec containing '=='.
+  when: hermes_runtime_plugins | length > 0
+
+- name: Prepare each checksum-pinned Hermes plugin archive
+  ansible.builtin.include_tasks: prepare_plugin_archive.yml
+  loop: "{{ hermes_runtime_plugins | selectattr('archive_url', 'defined') | list }}"
+  loop_control:
+    loop_var: hermes_runtime_plugin_archive
+    label: "{{ hermes_runtime_plugin_archive.name }}"
+  vars:
+    hermes_runtime_plugin_archive_dir: >-
+      /var/cache/hermes-runtime/plugins/{{ hermes_runtime_plugin_archive.archive_sha256 | lower }}
+  # Check mode does not fetch archives; archive plugins are not deployed in that run.
+  when: not ansible_check_mode
+
+- name: Deploy each Hermes plugin to every configured home
+  ansible.builtin.include_tasks: deploy_plugin.yml
+  loop: "{{ hermes_runtime_plugins | product(hermes_runtime_plugin_homes or [hermes_runtime_hermes_home]) | list }}"
+  loop_control:
+    loop_var: hermes_runtime_plugin_target
+    label: "{{ hermes_runtime_plugin_target.0.name }} -> {{ hermes_runtime_plugin_target.1 }}"
+  vars:
+    hermes_runtime_plugin: "{{ hermes_runtime_plugin_target.0 }}"
+    hermes_runtime_plugin_home: "{{ hermes_runtime_plugin_target.1 }}"
+    hermes_runtime_plugin_dir: "{{ hermes_runtime_plugin_home }}/plugins/{{ hermes_runtime_plugin.name }}"
+    hermes_runtime_plugin_source: >-
+      {{ hermes_runtime_plugin.src
+      if hermes_runtime_plugin.src is defined
+      else '/var/cache/hermes-runtime/plugins/' ~
+      (hermes_runtime_plugin.archive_sha256 | lower) ~ '/source/' ~
+      hermes_runtime_plugin.archive_subdir }}
+
+- name: Install pinned Hermes plugin requirements into the runtime virtual environment
+  become: true
+  ansible.builtin.command:
+    argv: >-
+      {{ [
+        hermes_runtime_uv_bin,
+        'pip',
+        'install',
+        '--python',
+        hermes_runtime_install_dir ~ '/venv/bin/python'
+      ] + hermes_runtime_plugin_requirements }}
+  vars:
+    hermes_runtime_plugin_requirements: >-
+      {{ hermes_runtime_plugins
+      | selectattr('requirements', 'defined')
+      | map(attribute='requirements')
+      | flatten
+      | unique
+      | list }}
+  register: hermes_runtime_plugin_requirements_install
+  changed_when: >-
+    'Installed' in (hermes_runtime_plugin_requirements_install.stderr | default('')) or
+    'Uninstalled' in (hermes_runtime_plugin_requirements_install.stderr | default(''))
+  when: hermes_runtime_plugin_requirements | length > 0
+  notify: "{{ hermes_runtime_gateway_restart_handler }}"

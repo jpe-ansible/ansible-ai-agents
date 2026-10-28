@@ -345,6 +345,8 @@
       ansible.builtin.set_fact:
         hermes_runtime_contract_main: false
         hermes_runtime_contract_units: false
+        hermes_runtime_contract_plugin_sources: false
+        hermes_runtime_contract_plugin_requirements: false
 
     - name: Negative case - main entry point requires unit inputs
       block:
@@ -375,9 +377,207 @@
           ansible.builtin.set_fact:
             hermes_runtime_contract_units: true
 
+    - name: Negative case - plugin has both source types
+      block:
+        - name: Run plugins entry point with both source types
+          ansible.builtin.include_role:
+            name: hermes_runtime
+            tasks_from: plugins
+          vars:
+            hermes_runtime_install_dir: /usr/local/lib/hermes-agent
+            hermes_runtime_user: root
+            hermes_runtime_group: root
+            hermes_runtime_hermes_home: /root/.hermes
+            hermes_runtime_plugins:
+              - name: invalid-plugin
+                src: /opt/hermes/plugins/invalid-plugin
+                archive_url: https://example.invalid/plugin.tar.gz
+                archive_sha256: "0000000000000000000000000000000000000000000000000000000000000000"
+                archive_subdir: source/invalid-plugin
+      rescue:
+        - name: Confirm both plugin source types are rejected by the argument spec
+          ansible.builtin.assert:
+            that: "'parameters are mutually exclusive' in ansible_failed_result.msg"
+          no_log: true
+        - name: Record plugin source rejection
+          ansible.builtin.set_fact:
+            hermes_runtime_contract_plugin_sources: true
+
+    - name: Negative case - plugin requirement is not pinned
+      block:
+        - name: Run plugins entry point with an unpinned requirement
+          ansible.builtin.include_role:
+            name: hermes_runtime
+            tasks_from: plugins
+          vars:
+            hermes_runtime_install_dir: /usr/local/lib/hermes-agent
+            hermes_runtime_user: root
+            hermes_runtime_group: root
+            hermes_runtime_hermes_home: /root/.hermes
+            hermes_runtime_plugins:
+              - name: invalid-plugin
+                src: /opt/hermes/plugins/invalid-plugin
+                requirements:
+                  - langfuse
+      rescue:
+        - name: Confirm unpinned plugin requirement is rejected
+          ansible.builtin.assert:
+            that: "'pinned pip spec containing' in ansible_failed_result.msg"
+          no_log: true
+        - name: Record plugin requirement rejection
+          ansible.builtin.set_fact:
+            hermes_runtime_contract_plugin_requirements: true
+
     - name: Confirm every entry point rejected its invalid input
       ansible.builtin.assert:
         quiet: true
         that:
           - hermes_runtime_contract_main
           - hermes_runtime_contract_units
+          - hermes_runtime_contract_plugin_sources
+          - hermes_runtime_contract_plugin_requirements
+
+- name: Deploy a managed-host Hermes plugin to each configured home
+  hosts: localhost
+  gather_facts: true
+  vars:
+    ansible_python_interpreter: "{{ ansible_playbook_python }}"
+  tasks:
+    - name: Create the Hermes plugin fixture root
+      ansible.builtin.tempfile:
+        state: directory
+        prefix: hermes-plugin-render-
+      register: hermes_runtime_plugin_test_root
+
+    - name: Create the source plugin directory
+      ansible.builtin.file:
+        path: "{{ hermes_runtime_plugin_test_root.path }}/source/example-plugin"
+        state: directory
+        mode: "0755"
+
+    - name: Write the source plugin metadata
+      ansible.builtin.copy:
+        content: "name: example-plugin\n"
+        dest: "{{ hermes_runtime_plugin_test_root.path }}/source/example-plugin/plugin.yaml"
+        mode: "0644"
+
+    - name: Write the source plugin module
+      ansible.builtin.copy:
+        content: "def register(ctx):\n    return None\n"
+        dest: "{{ hermes_runtime_plugin_test_root.path }}/source/example-plugin/__init__.py"
+        mode: "0644"
+
+    - name: Create the existing managed plugin directory
+      become: true
+      ansible.builtin.file:
+        path: >-
+          {{ hermes_runtime_plugin_test_root.path }}/profile-home/plugins/example-plugin
+        state: directory
+        owner: "{{ ansible_user_id }}"
+        group: "{{ ansible_user_gid }}"
+        mode: "0755"
+
+    - name: Seed an operator file for removal from the managed plugin directory
+      become: true
+      ansible.builtin.copy:
+        content: stale
+        dest: >-
+          {{ hermes_runtime_plugin_test_root.path }}/profile-home/plugins/example-plugin/stale.txt
+        owner: "{{ ansible_user_id }}"
+        group: "{{ ansible_user_gid }}"
+        mode: "0644"
+
+    - name: Create the bytecode directory inside the managed plugin directory
+      become: true
+      ansible.builtin.file:
+        path: >-
+          {{ hermes_runtime_plugin_test_root.path }}/profile-home/plugins/example-plugin/__pycache__
+        state: directory
+        owner: "{{ ansible_user_id }}"
+        group: "{{ ansible_user_gid }}"
+        mode: "0755"
+
+    - name: Seed bytecode written by the running gateway into the managed plugin directory
+      become: true
+      ansible.builtin.copy:
+        content: bytecode
+        dest: >-
+          {{ hermes_runtime_plugin_test_root.path }}/profile-home/plugins/example-plugin/__pycache__/module.pyc
+        owner: "{{ ansible_user_id }}"
+        group: "{{ ansible_user_gid }}"
+        mode: "0644"
+
+    - name: Link a Nix-bundle style source plugin directory
+      ansible.builtin.file:
+        src: "{{ hermes_runtime_plugin_test_root.path }}/source/example-plugin"
+        dest: "{{ hermes_runtime_plugin_test_root.path }}/source/linked-plugin"
+        state: link
+
+    - name: Install the source plugins into both Hermes homes
+      ansible.builtin.include_role:
+        name: hermes_runtime
+        tasks_from: plugins
+      vars:
+        hermes_runtime_install_dir: "{{ hermes_runtime_plugin_test_root.path }}/install"
+        hermes_runtime_user: "{{ ansible_user_id }}"
+        hermes_runtime_group: "{{ ansible_user_gid }}"
+        hermes_runtime_hermes_home: "{{ hermes_runtime_plugin_test_root.path }}/root-home"
+        hermes_runtime_plugins:
+          - name: example-plugin
+            src: "{{ hermes_runtime_plugin_test_root.path }}/source/example-plugin"
+          - name: linked-plugin
+            src: "{{ hermes_runtime_plugin_test_root.path }}/source/linked-plugin"
+        hermes_runtime_plugin_homes:
+          - "{{ hermes_runtime_plugin_test_root.path }}/root-home"
+          - "{{ hermes_runtime_plugin_test_root.path }}/profile-home"
+        hermes_runtime_gateway_restart_handler: Record Hermes plugin restart
+
+    - name: Check each deployed plugin metadata file in every Hermes home
+      become: true
+      ansible.builtin.stat:
+        path: "{{ hermes_runtime_plugin_test_root.path }}/{{ item.0 }}/plugins/{{ item.1 }}/plugin.yaml"
+      loop: "{{ ['root-home', 'profile-home'] | product(['example-plugin', 'linked-plugin']) | list }}"
+      loop_control:
+        label: "{{ item.0 }}/{{ item.1 }}"
+      register: hermes_runtime_plugin_home_metadata
+
+    - name: Check the stale plugin file was removed
+      become: true
+      ansible.builtin.stat:
+        path: >-
+          {{ hermes_runtime_plugin_test_root.path }}/profile-home/plugins/example-plugin/stale.txt
+      register: hermes_runtime_plugin_stale_file
+
+    - name: Check the gateway bytecode was preserved
+      become: true
+      ansible.builtin.stat:
+        path: >-
+          {{ hermes_runtime_plugin_test_root.path }}/profile-home/plugins/example-plugin/__pycache__/module.pyc
+      register: hermes_runtime_plugin_bytecode
+
+    - name: Run the plugin restart notification handler
+      ansible.builtin.meta: flush_handlers
+
+    - name: Assert the plugins were deployed and only managed stale files were removed
+      ansible.builtin.assert:
+        quiet: true
+        that:
+          - item.stat.exists
+          - item.stat.uid == ansible_user_uid
+          - item.stat.gid == ansible_user_gid
+          - not hermes_runtime_plugin_stale_file.stat.exists
+          - hermes_runtime_plugin_bytecode.stat.exists
+          - hermes_runtime_plugin_restart_seen | default(false)
+      loop: "{{ hermes_runtime_plugin_home_metadata.results }}"
+      loop_control:
+        label: "{{ item.item | join('/') }}"
+
+    - name: Remove the Hermes plugin fixture root
+      become: true
+      ansible.builtin.file:
+        path: "{{ hermes_runtime_plugin_test_root.path }}"
+        state: absent
+  handlers:
+    - name: Record Hermes plugin restart
+      ansible.builtin.set_fact:
+        hermes_runtime_plugin_restart_seen: true
