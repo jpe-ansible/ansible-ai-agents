@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.2](https://github.com/jpe-ansible/ansible-ai-agents/compare/v1.1.1...v1.1.2) (2026-10-28)
+
+
+### Bug Fixes
+
+* **hermes_runtime:** reinstall when the runtime venv Python differs from the PM pin ([#30](https://github.com/jpe-ansible/ansible-ai-agents/issues/30)) ([d1f1282](https://github.com/jpe-ansible/ansible-ai-agents/commit/d1f1282c61e31cd7bbc7bbebea2099fec7cc510d))
+
 ## [1.1.1](https://github.com/jpe-ansible/ansible-ai-agents/compare/v1.1.0...v1.1.1) (2026-10-28)
 
 
