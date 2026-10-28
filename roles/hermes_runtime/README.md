@@ -1,9 +1,9 @@
 # `hermes_runtime`
 
 Installs a checksum-verified Hermes Agent release, enforces the tagged checkout,
-verifies the installed CLI version, and manages gateway and dashboard systemd
-units. Run the role with privilege escalation. The target must support the
-upstream installer and systemd.
+verifies the installed CLI version, manages plugins, and deploys gateway and
+dashboard systemd units. Run the role with privilege escalation. The target must
+support the upstream installer and systemd.
 
 ## Inputs
 
@@ -20,6 +20,8 @@ upstream installer and systemd.
 | `hermes_runtime_group` | string | yes | Service group. |
 | `hermes_runtime_uid` | integer | yes | UID used for user-session ordering. |
 | `hermes_runtime_hermes_home` | path | yes | Working directory and `HERMES_HOME`. |
+| `hermes_runtime_plugins` | list | no | Plugin definitions; defaults to `[]`. |
+| `hermes_runtime_plugin_homes` | list of paths | no | Homes that receive each listed plugin; defaults to `[hermes_runtime_hermes_home]`. |
 | `hermes_runtime_environment_file` | path | yes | Optional environment file loaded by both units. |
 | `hermes_runtime_dashboard_web_dist` | path | no | Dashboard web asset directory. |
 | `hermes_runtime_dashboard_host` | string | yes | Dashboard bind host. |
@@ -38,6 +40,34 @@ upstream installer and systemd.
 | `hermes_runtime_gateway_environment` | list of `{name, value}` | no | Additional gateway `Environment` entries; defaults to empty. |
 | `hermes_runtime_dashboard_environment` | list of `{name, value}` | no | Additional dashboard `Environment` entries; defaults to empty. |
 | `hermes_runtime_gateway_after_user_manager` | boolean | no | Order the gateway after the user's systemd manager; defaults to false. |
+
+Each plugin has a directory `name` and exactly one source. Archives require a
+SHA-256 checksum and the path to the plugin directory inside the extracted
+archive. `src` points to a directory already present on the managed host.
+Optional Python requirements must be pinned with `==`. They install into the
+Hermes virtual environment with the managed `uv` at `/root/.hermes/bin/uv`, the
+path the upstream installer creates.
+
+```yaml
+hermes_runtime_plugins:
+  - name: langfuse
+    archive_url: https://codeload.github.com/NousResearch/hermes-official-plugins/tar.gz/<40-character-commit-sha>
+    archive_sha256: <sha256-of-tarball>
+    archive_subdir: hermes-official-plugins-<commit-sha>/langfuse
+    requirements:
+      - langfuse==4.15.2
+  - name: local-bridge
+    src: /opt/hermes/plugins/local-bridge
+hermes_runtime_plugin_homes:
+  - /var/lib/example.com/.hermes
+  - /var/lib/example.com/.hermes/profiles/reviewer
+```
+
+The role manages only the listed plugin directories and removes stale files
+inside those directories. It leaves other plugins in each home untouched.
+Python bytecode (`__pycache__` and `*.pyc`) inside a plugin directory is not
+managed, so the running gateway can write it. Check mode does not fetch archives,
+so archive plugins are not deployed in a check-mode run.
 
 ## Usage
 
@@ -64,8 +94,9 @@ upstream installer and systemd.
 
 ## Installation
 
-Use the `install` entry point before consumer-owned source patches, configuration,
-or prechecks, then call `units` when those tasks are complete:
+The default role call runs installation, plugin deployment, and unit deployment
+in that order. For a phased deployment, call `install`, run consumer-owned
+patches, configuration, or prechecks, call `plugins`, then call `units`:
 
 ```yaml
 - name: Install Hermes runtime
@@ -75,13 +106,18 @@ or prechecks, then call `units` when those tasks are complete:
 
 # Run consumer-owned patch, configuration, and precheck tasks here.
 
+- name: Install Hermes plugins
+  ansible.builtin.include_role:
+    name: dryvist.ai_agents.hermes_runtime
+    tasks_from: plugins
+
 - name: Deploy Hermes runtime units
   ansible.builtin.include_role:
     name: dryvist.ai_agents.hermes_runtime
     tasks_from: units
 ```
 
-The existing role call still runs installation followed by unit deployment. Each
+With `hermes_runtime_plugins: []`, the plugin entry point makes no changes. Each
 `include_role` entry point also loads the role's handlers into the play.
 
 ## Installation change state

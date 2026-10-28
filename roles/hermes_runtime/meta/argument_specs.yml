@@ -1,9 +1,10 @@
 ---
 argument_specs:
   main:
-    short_description: Install a pinned Hermes Agent runtime and manage its systemd units.
+    short_description: Install a pinned Hermes Agent runtime, plugins, and systemd units.
     description:
       - Installs the checksum-verified upstream installer and pins its checkout to a release tag.
+      - Manages checksum-pinned plugins and their pinned Python requirements.
       - Renders and starts the Hermes gateway and dashboard units.
     options:
       hermes_runtime_version: &hermes_runtime_version
@@ -158,6 +159,42 @@ argument_specs:
         default: false
         description:
           - Order and pull in the gateway after the service user's systemd manager.
+      hermes_runtime_plugins: &hermes_runtime_plugins
+        type: list
+        elements: dict
+        default: []
+        options:
+          name:
+            type: str
+            required: true
+          archive_url:
+            type: str
+          archive_sha256:
+            type: str
+          archive_subdir:
+            type: str
+          src:
+            type: path
+          requirements:
+            type: list
+            elements: str
+        required_one_of:
+          - [src, archive_url]
+        mutually_exclusive:
+          - [src, archive_url]
+          - [src, archive_sha256]
+          - [src, archive_subdir]
+        required_by:
+          archive_url:
+            - archive_sha256
+            - archive_subdir
+        description:
+          - Plugin definitions with exactly one source and optional pinned requirements.
+      hermes_runtime_plugin_homes: &hermes_runtime_plugin_homes
+        type: list
+        elements: path
+        description:
+          - Hermes homes that receive each listed plugin; defaults to the primary home.
   install:
     short_description: Install a pinned Hermes Agent runtime.
     description:
@@ -203,3 +240,18 @@ argument_specs:
       hermes_runtime_gateway_environment: *hermes_runtime_gateway_environment
       hermes_runtime_dashboard_environment: *hermes_runtime_dashboard_environment
       hermes_runtime_gateway_after_user_manager: *hermes_runtime_gateway_after_user_manager
+      hermes_runtime_plugins: *hermes_runtime_plugins
+      hermes_runtime_plugin_homes: *hermes_runtime_plugin_homes
+  plugins:
+    short_description: Install checksum-pinned Hermes plugins into configured homes.
+    description:
+      - Downloads and verifies plugin archives or copies managed-host source directories.
+      - Installs pinned Python requirements into the Hermes runtime virtual environment.
+    options:
+      hermes_runtime_install_dir: *hermes_runtime_install_dir
+      hermes_runtime_user: *hermes_runtime_user
+      hermes_runtime_group: *hermes_runtime_group
+      hermes_runtime_hermes_home: *hermes_runtime_hermes_home
+      hermes_runtime_gateway_restart_handler: *hermes_runtime_gateway_restart_handler
+      hermes_runtime_plugins: *hermes_runtime_plugins
+      hermes_runtime_plugin_homes: *hermes_runtime_plugin_homes

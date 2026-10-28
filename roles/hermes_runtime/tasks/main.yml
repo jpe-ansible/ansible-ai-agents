@@ -2,6 +2,10 @@
 - name: Install Hermes runtime
   ansible.builtin.import_tasks: install.yml
 
+- name: Install Hermes runtime plugins
+  ansible.builtin.import_tasks: plugins.yml
+  when: not ansible_check_mode or hermes_runtime_installed_version_before_pin.rc == 0
+
 - name: Deploy Hermes runtime units
   ansible.builtin.import_tasks: units.yml
   when: not ansible_check_mode or hermes_runtime_installed_version_before_pin.rc == 0

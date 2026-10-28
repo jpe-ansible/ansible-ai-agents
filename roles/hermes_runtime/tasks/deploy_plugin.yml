@@ -1,0 +1,85 @@
+---
+- name: Inspect the Hermes plugin source directory
+  become: true
+  ansible.builtin.stat:
+    path: "{{ hermes_runtime_plugin_source }}"
+    follow: true
+  register: hermes_runtime_plugin_source_stat
+
+- name: Assert the Hermes plugin source is a directory
+  ansible.builtin.assert:
+    quiet: true
+    that:
+      - hermes_runtime_plugin_source_stat.stat.isdir | default(false)
+    fail_msg: >-
+      Hermes plugin {{ hermes_runtime_plugin.name }} source
+      {{ hermes_runtime_plugin_source }} is not a directory.
+  # Check mode may run before an archive plugin is fetched; the sync below is skipped in that case.
+  when: not ansible_check_mode
+
+- name: Sync the Hermes plugin source into its home
+  become: true
+  when: hermes_runtime_plugin_source_stat.stat.isdir | default(false)
+  block:
+    - name: Create the Hermes plugin directory
+      ansible.builtin.file:
+        path: "{{ hermes_runtime_plugin_dir }}"
+        state: directory
+        owner: "{{ hermes_runtime_user }}"
+        group: "{{ hermes_runtime_group }}"
+        mode: "0755"
+
+    - name: Copy the Hermes plugin source files
+      ansible.builtin.copy:
+        src: "{{ hermes_runtime_plugin_source }}/"
+        dest: "{{ hermes_runtime_plugin_dir }}/"
+        remote_src: true
+        owner: "{{ hermes_runtime_user }}"
+        group: "{{ hermes_runtime_group }}"
+        mode: preserve
+      notify: "{{ hermes_runtime_gateway_restart_handler }}"
+
+    - name: Find entries in the Hermes plugin source
+      ansible.builtin.find:
+        paths: "{{ hermes_runtime_plugin_source }}"
+        recurse: true
+        file_type: any
+      register: hermes_runtime_plugin_source_entries
+
+    # Bytecode written by the running gateway is not part of the managed source.
+    - name: Find entries in the deployed Hermes plugin
+      ansible.builtin.find:
+        paths: "{{ hermes_runtime_plugin_dir }}"
+        recurse: true
+        file_type: any
+        excludes:
+          - __pycache__
+          - "*.pyc"
+      register: hermes_runtime_plugin_deployed_entries
+
+    - name: Remove deployed Hermes plugin entries absent from the source
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop: >-
+        {{ hermes_runtime_plugin_deployed_entries.files | map(attribute='path') | list
+        | difference(hermes_runtime_plugin_source_entries.files | map(attribute='path')
+        | map('regex_replace', '^' ~ (hermes_runtime_plugin_source | regex_escape), hermes_runtime_plugin_dir)
+        | list) }}
+      notify: "{{ hermes_runtime_gateway_restart_handler }}"
+
+    - name: Check the deployed Hermes plugin metadata file
+      ansible.builtin.stat:
+        path: "{{ hermes_runtime_plugin_dir }}/plugin.yaml"
+      register: hermes_runtime_plugin_metadata
+      when: not ansible_check_mode
+
+    - name: Assert the deployed Hermes plugin has plugin.yaml
+      ansible.builtin.assert:
+        quiet: true
+        that:
+          - hermes_runtime_plugin_metadata.stat.exists
+        fail_msg: >-
+          Hermes plugin {{ hermes_runtime_plugin.name }} is missing plugin.yaml in
+          {{ hermes_runtime_plugin_dir }}.
+      when: not ansible_check_mode

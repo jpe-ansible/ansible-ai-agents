@@ -20,3 +20,7 @@ hermes_runtime_unit_on_failure: ""
 hermes_runtime_gateway_environment: []
 hermes_runtime_dashboard_environment: []
 hermes_runtime_gateway_after_user_manager: false
+hermes_runtime_plugins: []
+hermes_runtime_plugin_homes: []
+# Managed uv that the upstream installer places under the HERMES_HOME of the root account it runs as.
+hermes_runtime_uv_bin: /root/.hermes/bin/uv
