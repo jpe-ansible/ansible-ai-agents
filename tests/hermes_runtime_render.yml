@@ -111,7 +111,9 @@
           - hermes_runtime_upgrade_task.when[1] == hermes_runtime_check_mode_guard
           - "'--branch' not in hermes_runtime_upgrade_task['ansible.builtin.command'].argv"
           - "'repository' not in hermes_runtime_upgrade_task.loop"
-          - hermes_runtime_upgrade_task['ansible.builtin.command'].argv[2] == '--stage'
+          - hermes_runtime_upgrade_task['ansible.builtin.command'].argv[2] == '--dir'
+          - hermes_runtime_initial_install_task['ansible.builtin.command'].argv[2] == '--dir'
+          - hermes_runtime_upgrade_task['ansible.builtin.command'].argv[4] == '--stage'
 
     - name: Assert post-install verification tasks remain unchanged
       ansible.builtin.assert:
