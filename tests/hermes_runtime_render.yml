@@ -5,7 +5,7 @@
   vars:
     hermes_runtime_version_condition: >-
       hermes_runtime_installed_version_before_pin.rc != 0 or
-      ('(' ~ hermes_runtime_version ~ ')') not in
+      ('Hermes Agent v' ~ hermes_runtime_version ~ ' (') not in
       (hermes_runtime_installed_version_before_pin.stdout | default(''))
     hermes_runtime_check_mode_guard: >-
       not ansible_check_mode or
@@ -108,12 +108,12 @@
           - hermes_runtime_postinstall_assert_task['ansible.builtin.assert'].quiet == true
           - >-
             hermes_runtime_postinstall_assert_task['ansible.builtin.assert'].that ==
-            ["('(' ~ hermes_runtime_version ~ ')') in hermes_runtime_installed_version.stdout"]
+            ["('Hermes Agent v' ~ hermes_runtime_version ~ ' (') in hermes_runtime_installed_version.stdout"]
           - >-
             hermes_runtime_postinstall_assert_task['ansible.builtin.assert'].fail_msg ==
             ('{' ~ '{ hermes_runtime_bin }} --version reported "' ~
             '{' ~ '{ hermes_runtime_installed_version.stdout | trim }}", which does not contain "' ~
-            '(' ~ '{' ~ '{ hermes_runtime_version }})", the pinned release.')
+            'Hermes Agent v' ~ '{' ~ '{ hermes_runtime_version }} (", the pinned release.')
           - hermes_runtime_postinstall_assert_task.when | length == 2
           - >-
             hermes_runtime_postinstall_assert_task.when[0] ==
