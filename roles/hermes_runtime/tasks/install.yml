@@ -48,7 +48,7 @@
   when:
     - >-
       hermes_runtime_installed_version_before_pin.rc != 0 or
-      ('(' ~ hermes_runtime_version ~ ')') not in
+      ('Hermes Agent v' ~ hermes_runtime_version ~ ' (') not in
       (hermes_runtime_installed_version_before_pin.stdout | default(''))
     - not ansible_check_mode or hermes_runtime_installed_version_before_pin.rc == 0
 
@@ -65,13 +65,13 @@
       - --skip-computer-use
     creates: >-
       {{ omit if hermes_runtime_installed_version_before_pin.rc != 0 or
-      ('(' ~ hermes_runtime_version ~ ')') not in
+      ('Hermes Agent v' ~ hermes_runtime_version ~ ' (') not in
       (hermes_runtime_installed_version_before_pin.stdout | default(''))
       else hermes_runtime_bin }}
   when:
     - >-
       hermes_runtime_installed_version_before_pin.rc != 0 or
-      ('(' ~ hermes_runtime_version ~ ')') not in
+      ('Hermes Agent v' ~ hermes_runtime_version ~ ' (') not in
       (hermes_runtime_installed_version_before_pin.stdout | default(''))
     - not ansible_check_mode or hermes_runtime_installed_version_before_pin.rc == 0
 
@@ -92,11 +92,11 @@
   ansible.builtin.assert:
     quiet: true
     that:
-      - "('(' ~ hermes_runtime_version ~ ')') in hermes_runtime_installed_version.stdout"
+      - "('Hermes Agent v' ~ hermes_runtime_version ~ ' (') in hermes_runtime_installed_version.stdout"
     fail_msg: >-
       {{ hermes_runtime_bin }} --version reported
       "{{ hermes_runtime_installed_version.stdout | trim }}", which does not
-      contain "({{ hermes_runtime_version }})", the pinned release.
+      contain "Hermes Agent v{{ hermes_runtime_version }} (", the pinned release.
   when:
     - not (ansible_check_mode and hermes_runtime_checkout is changed)
     - not ansible_check_mode or hermes_runtime_installed_version_before_pin.rc == 0

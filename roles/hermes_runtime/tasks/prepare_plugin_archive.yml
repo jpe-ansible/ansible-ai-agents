@@ -1,0 +1,27 @@
+---
+- name: Create the Hermes plugin archive cache directory
+  become: true
+  ansible.builtin.file:
+    path: "{{ hermes_runtime_plugin_archive_dir }}/source"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Fetch and verify the Hermes plugin archive
+  become: true
+  ansible.builtin.get_url:
+    url: "{{ hermes_runtime_plugin_archive.archive_url }}"
+    dest: "{{ hermes_runtime_plugin_archive_dir }}/archive.tar.gz"
+    checksum: "sha256:{{ hermes_runtime_plugin_archive.archive_sha256 | lower }}"
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Extract the Hermes plugin archive once per checksum
+  become: true
+  ansible.builtin.unarchive:
+    src: "{{ hermes_runtime_plugin_archive_dir }}/archive.tar.gz"
+    dest: "{{ hermes_runtime_plugin_archive_dir }}/source"
+    remote_src: true
+    creates: "{{ hermes_runtime_plugin_archive_dir }}/source/{{ hermes_runtime_plugin_archive.archive_subdir }}"

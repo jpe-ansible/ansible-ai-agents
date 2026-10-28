@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.1.0](https://github.com/jpe-ansible/ansible-ai-agents/compare/v1.0.2...v1.1.0) (2026-10-28)
+
+
+### Features
+
+* **hermes_runtime:** install checksum-pinned plugins into each home ([#24](https://github.com/jpe-ansible/ansible-ai-agents/issues/24)) ([bfb3366](https://github.com/jpe-ansible/ansible-ai-agents/commit/bfb3366cd5b73c087385d218a9db18f57d068aad))
+
+
+### Bug Fixes
+
+* **hermes_runtime:** time out the first-install run ([#22](https://github.com/jpe-ansible/ansible-ai-agents/issues/22)) ([038e10b](https://github.com/jpe-ansible/ansible-ai-agents/commit/038e10b872c115296aa1115342df2f7b61e83146))
+
 ## [1.0.2](https://github.com/jpe-ansible/ansible-ai-agents/compare/v1.0.1...v1.0.2) (2026-10-20)
 
 
