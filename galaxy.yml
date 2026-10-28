@@ -1,7 +1,7 @@
 ---
 namespace: dryvist
 name: ai_agents
-version: 1.1.5  # x-release-please-version
+version: 1.2.0  # x-release-please-version
 readme: README.md
 authors:
   - dryvist

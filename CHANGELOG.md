@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/jpe-ansible/ansible-ai-agents/compare/v1.1.5...v1.2.0) (2026-10-28)
+
+
+### Features
+
+* **hermes_runtime:** publish the PM-selected virtualenv ([#41](https://github.com/jpe-ansible/ansible-ai-agents/issues/41)) ([1bc9ac7](https://github.com/jpe-ansible/ansible-ai-agents/commit/1bc9ac7d047531a3bd1e7c14edac645c415bc5ae))
+
 ## [1.1.5](https://github.com/jpe-ansible/ansible-ai-agents/compare/v1.1.4...v1.1.5) (2026-10-28)
 
 

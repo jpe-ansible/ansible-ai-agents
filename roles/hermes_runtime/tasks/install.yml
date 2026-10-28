@@ -76,7 +76,8 @@
       - -c
       - >-
         from pathlib import Path; from pm.environments import selected_venv, venv_python_version;
-        v = venv_python_version(selected_venv(Path.cwd())); print('%d.%d' % v if v else '')
+        venv = selected_venv(Path.cwd()); v = venv_python_version(venv);
+        print('%d.%d' % v if v else ''); print(venv)
     chdir: "{{ hermes_runtime_install_dir }}"
   environment:
     HERMES_HOME: "{{ hermes_runtime_hermes_home }}"
@@ -98,7 +99,7 @@
   ansible.builtin.set_fact:
     hermes_runtime_python_stale: >-
       {{ hermes_runtime_venv_python_before_pin.rc != 0 or
-      (hermes_runtime_venv_python_before_pin.stdout | trim) != hermes_runtime_pm_python }}
+      (hermes_runtime_venv_python_before_pin.stdout_lines | first | default('')) != hermes_runtime_pm_python }}
   when:
     - not ansible_check_mode or hermes_runtime_installed_version_before_pin.rc == 0
 
@@ -177,12 +178,18 @@
     quiet: true
     that:
       - hermes_runtime_venv_python.rc == 0
-      - (hermes_runtime_venv_python.stdout | trim) == hermes_runtime_pm_python
+      - (hermes_runtime_venv_python.stdout_lines | first | default('')) == hermes_runtime_pm_python
     fail_msg: >-
       The venv PM selects for {{ hermes_runtime_install_dir }} under {{ hermes_runtime_hermes_home }} reports Python
-      "{{ hermes_runtime_venv_python.stdout | default('') | trim }}"
+      "{{ hermes_runtime_venv_python.stdout_lines | default([]) | first | default('') }}"
       (rc {{ hermes_runtime_venv_python.rc | default('none') }}),
       but pm/lock.json pins Python {{ hermes_runtime_pm_python }}.
   when:
     - not (ansible_check_mode and hermes_runtime_checkout is changed)
     - not ansible_check_mode or hermes_runtime_installed_version_before_pin.rc == 0
+
+- name: Publish the PM-selected runtime virtualenv
+  ansible.builtin.set_fact:
+    hermes_runtime_venv: "{{ hermes_runtime_venv_python.stdout_lines[1] }}"
+  when:
+    - hermes_runtime_venv_python.stdout_lines | default([]) | length > 1
