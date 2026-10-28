@@ -27,6 +27,7 @@
             [
               'Fetch the pinned Hermes installer with checksum verification',
               'Run the verified installer for a missing Hermes CLI',
+              'Remove installer state for this checkout under root\'s Hermes home',
               'Read Hermes CLI version before pinning',
               'Pin the Hermes checkout to the requested release tag',
               'Read the PM-pinned Python from the Hermes checkout',

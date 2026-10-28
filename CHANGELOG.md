@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.1](https://github.com/jpe-ansible/ansible-ai-agents/compare/v1.2.0...v1.2.1) (2026-10-28)
+
+
+### Bug Fixes
+
+* **hermes_runtime:** bind the launcher to the service home ([#45](https://github.com/jpe-ansible/ansible-ai-agents/issues/45)) ([25ed638](https://github.com/jpe-ansible/ansible-ai-agents/commit/25ed638659132f00d7970704deac290433734a44))
+
 ## [1.2.0](https://github.com/jpe-ansible/ansible-ai-agents/compare/v1.1.5...v1.2.0) (2026-10-28)
 
 
