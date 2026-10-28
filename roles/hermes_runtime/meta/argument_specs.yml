@@ -212,6 +212,7 @@ argument_specs:
       hermes_runtime_installer_timeout: *hermes_runtime_installer_timeout
       hermes_runtime_install_dir: *hermes_runtime_install_dir
       hermes_runtime_bin: *hermes_runtime_bin
+      hermes_runtime_hermes_home: *hermes_runtime_hermes_home
   units:
     short_description: Render and start the Hermes gateway and dashboard units.
     description:
