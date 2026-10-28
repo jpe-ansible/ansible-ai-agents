@@ -213,6 +213,7 @@ argument_specs:
       hermes_runtime_install_dir: *hermes_runtime_install_dir
       hermes_runtime_bin: *hermes_runtime_bin
       hermes_runtime_hermes_home: *hermes_runtime_hermes_home
+      hermes_runtime_user: *hermes_runtime_user
   units:
     short_description: Render and start the Hermes gateway and dashboard units.
     description:
