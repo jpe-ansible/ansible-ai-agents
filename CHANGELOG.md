@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.4](https://github.com/jpe-ansible/ansible-ai-agents/compare/v1.1.3...v1.1.4) (2026-10-28)
+
+
+### Bug Fixes
+
+* **hermes_runtime:** point the installer at the managed install dir ([#36](https://github.com/jpe-ansible/ansible-ai-agents/issues/36)) ([aa4d15c](https://github.com/jpe-ansible/ansible-ai-agents/commit/aa4d15c7ad829458f0a5f95d6b4098ec79d44eb2))
+
 ## [1.1.3](https://github.com/jpe-ansible/ansible-ai-agents/compare/v1.1.2...v1.1.3) (2026-10-28)
 
 
