@@ -15,6 +15,8 @@
     argv:
       - bash
       - "{{ hermes_runtime_installer_path }}"
+      - --dir
+      - "{{ hermes_runtime_install_dir }}"
       - --branch
       - "{{ hermes_runtime_version_tag }}"
       - --skip-setup
@@ -98,6 +100,8 @@
     argv:
       - bash
       - "{{ hermes_runtime_installer_path }}"
+      - --dir
+      - "{{ hermes_runtime_install_dir }}"
       - --stage
       - "{{ item }}"
       - --skip-setup
