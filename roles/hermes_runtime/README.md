@@ -3,7 +3,8 @@
 Installs a checksum-verified Hermes Agent release, enforces the tagged checkout,
 verifies the installed CLI version, reinstalls when the runtime virtualenv's Python
 differs from the Python minor pinned in the checkout's `pm/lock.json`, manages plugins,
-and deploys gateway and dashboard systemd units. Run the role with privilege escalation. The target must
+and deploys gateway and dashboard systemd units. The install entry point publishes `hermes_runtime_venv`, the virtualenv upstream PM selects for the
+service `HERMES_HOME`. Run the role with privilege escalation. The target must
 support the upstream installer and systemd.
 
 ## Inputs
@@ -46,7 +47,7 @@ Each plugin has a directory `name` and exactly one source. Archives require a
 SHA-256 checksum and the path to the plugin directory inside the extracted
 archive. `src` points to a directory already present on the managed host.
 Optional Python requirements must be pinned with `==`. They install into the
-Hermes virtual environment with the managed `uv` at `/root/.hermes/bin/uv`, the
+Hermes virtual environment PM selects (`hermes_runtime_venv`) with the managed `uv` at `/root/.hermes/bin/uv`, the
 path the upstream installer creates.
 
 ```yaml

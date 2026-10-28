@@ -62,7 +62,7 @@
         'pip',
         'install',
         '--python',
-        hermes_runtime_install_dir ~ '/venv/bin/python'
+        (hermes_runtime_venv | default(hermes_runtime_install_dir ~ '/venv')) ~ '/bin/python'
       ] + hermes_runtime_plugin_requirements }}
   vars:
     hermes_runtime_plugin_requirements: >-
