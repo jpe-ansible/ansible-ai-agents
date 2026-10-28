@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.5](https://github.com/jpe-ansible/ansible-ai-agents/compare/v1.1.4...v1.1.5) (2026-10-28)
+
+
+### Bug Fixes
+
+* **hermes_runtime:** build and verify the PM-selected environment ([#39](https://github.com/jpe-ansible/ansible-ai-agents/issues/39)) ([0fa0826](https://github.com/jpe-ansible/ansible-ai-agents/commit/0fa08260251a38aa1b74232da9e874127fd805b2))
+
 ## [1.1.4](https://github.com/jpe-ansible/ansible-ai-agents/compare/v1.1.3...v1.1.4) (2026-10-28)
 
 
