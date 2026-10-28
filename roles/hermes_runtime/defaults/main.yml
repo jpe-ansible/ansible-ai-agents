@@ -1,11 +1,11 @@
 ---
-hermes_runtime_version: "2026.9.11"
+hermes_runtime_version: "0.22.5"
 hermes_runtime_version_tag: "v{{ hermes_runtime_version }}"
 hermes_runtime_repo_url: https://github.com/NousResearch/hermes-agent.git
 hermes_runtime_installer_url: >-
   https://raw.githubusercontent.com/NousResearch/hermes-agent/{{
   hermes_runtime_version_tag }}/scripts/install.sh
-hermes_runtime_installer_sha256: "5854b15670b51a8daae8f59ddfa917062de9f74be261eb73b4b8d719710f8968"
+hermes_runtime_installer_sha256: "99cb3691d55019c6973a7acb775a915648666cc24e483ca827a1cdbb3531a674"
 hermes_runtime_installer_path: "/usr/local/lib/hermes-agent-installer-{{ hermes_runtime_version }}.sh"
 hermes_runtime_installer_timeout: 900
 hermes_runtime_install_dir: /usr/local/lib/hermes-agent

@@ -9,7 +9,7 @@ support the upstream installer and systemd.
 
 | Variable | Type | Required | Description |
 | --- | --- | --- | --- |
-| `hermes_runtime_version` | string | no | Bare release version; defaults to `2026.9.11`. |
+| `hermes_runtime_version` | string | no | Bare release version; defaults to `0.22.5`. |
 | `hermes_runtime_repo_url` | string | no | Upstream source repository URL. |
 | `hermes_runtime_installer_url` | string | no | Immutable installer URL for the selected release. |
 | `hermes_runtime_installer_sha256` | string | no | Installer checksum; defaults to the source release pin. |
