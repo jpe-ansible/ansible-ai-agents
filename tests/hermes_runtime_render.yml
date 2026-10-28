@@ -113,7 +113,13 @@
           - "'repository' not in hermes_runtime_upgrade_task.loop"
           - hermes_runtime_upgrade_task['ansible.builtin.command'].argv[2] == '--dir'
           - hermes_runtime_initial_install_task['ansible.builtin.command'].argv[2] == '--dir'
-          - hermes_runtime_upgrade_task['ansible.builtin.command'].argv[4] == '--stage'
+          - "'--hermes-home' in hermes_runtime_upgrade_task['ansible.builtin.command'].argv"
+          - "'--hermes-home' in hermes_runtime_initial_install_task['ansible.builtin.command'].argv"
+          - "'selected_venv' in hermes_runtime_venv_after_task['ansible.builtin.command'].argv[2]"
+          - >-
+            hermes_runtime_venv_before_task['ansible.builtin.command'] ==
+            hermes_runtime_venv_after_task['ansible.builtin.command']
+          - hermes_runtime_upgrade_task['ansible.builtin.command'].argv[6] == '--stage'
 
     - name: Assert post-install verification tasks remain unchanged
       ansible.builtin.assert:
@@ -155,8 +161,11 @@
             '{' ~ '{ hermes_runtime_install_dir }}/pm/lock.json'
           - hermes_runtime_pm_lock_task.check_mode == false
           - >-
-            hermes_runtime_venv_before_task['ansible.builtin.command'].argv[0] ==
-            '{' ~ '{ hermes_runtime_install_dir }}/venv/bin/python'
+            hermes_runtime_venv_before_task['ansible.builtin.command'].chdir ==
+            '{' ~ '{ hermes_runtime_install_dir }}'
+          - >-
+            hermes_runtime_venv_before_task.environment.HERMES_HOME ==
+            '{' ~ '{ hermes_runtime_hermes_home }}'
           - hermes_runtime_venv_before_task.failed_when == false
           - hermes_runtime_venv_before_task.changed_when == false
           - hermes_runtime_venv_before_task.register == 'hermes_runtime_venv_python_before_pin'
