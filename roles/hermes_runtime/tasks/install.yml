@@ -90,23 +90,23 @@
   when:
     - not ansible_check_mode or hermes_runtime_installed_version_before_pin.rc == 0
 
+# The checkout is already pinned above; the installer's repository stage would fetch
+# the tag as a branch, so a rerun runs every other non-interactive stage instead.
 - name: Install or upgrade Hermes when the checkout moved or its runtime Python is stale
   become: true
   ansible.builtin.command:
     argv:
       - bash
       - "{{ hermes_runtime_installer_path }}"
-      - --branch
-      - "{{ hermes_runtime_version_tag }}"
+      - --stage
+      - "{{ item }}"
       - --skip-setup
       - --non-interactive
       - --skip-computer-use
-    creates: >-
-      {{ omit if hermes_runtime_installed_version_before_pin.rc != 0 or
-      ('Hermes Agent v' ~ hermes_runtime_version ~ ' (') not in
-      (hermes_runtime_installed_version_before_pin.stdout | default('')) or
-      hermes_runtime_python_stale | default(false)
-      else hermes_runtime_bin }}
+  loop: [prerequisites, venv, python-deps, config, products, complete]
+  # Runs only when the version or venv Python is off the pin, so every run changes the install.
+  changed_when: true
+  timeout: "{{ hermes_runtime_installer_timeout }}"
   when:
     - >-
       hermes_runtime_installed_version_before_pin.rc != 0 or

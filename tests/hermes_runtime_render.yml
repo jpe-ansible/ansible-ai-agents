@@ -109,16 +109,9 @@
           - hermes_runtime_version_condition in hermes_runtime_upgrade_task.when[0]
           - "'hermes_runtime_python_stale | default(false)' in hermes_runtime_upgrade_task.when[0]"
           - hermes_runtime_upgrade_task.when[1] == hermes_runtime_check_mode_guard
-          - (hermes_runtime_upgrade_task.changed_when | default(false)) != true
-          - >-
-            'hermes_runtime_installed_version_before_pin.rc != 0' in
-            hermes_runtime_upgrade_task['ansible.builtin.command'].creates
-          - >-
-            'not in' in
-            hermes_runtime_upgrade_task['ansible.builtin.command'].creates
-          - >-
-            'hermes_runtime_python_stale | default(false)' in
-            hermes_runtime_upgrade_task['ansible.builtin.command'].creates
+          - "'--branch' not in hermes_runtime_upgrade_task['ansible.builtin.command'].argv"
+          - "'repository' not in hermes_runtime_upgrade_task.loop"
+          - hermes_runtime_upgrade_task['ansible.builtin.command'].argv[2] == '--stage'
 
     - name: Assert post-install verification tasks remain unchanged
       ansible.builtin.assert:
