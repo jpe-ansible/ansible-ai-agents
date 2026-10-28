@@ -1,8 +1,9 @@
 # `hermes_runtime`
 
 Installs a checksum-verified Hermes Agent release, enforces the tagged checkout,
-verifies the installed CLI version, manages plugins, and deploys gateway and
-dashboard systemd units. Run the role with privilege escalation. The target must
+verifies the installed CLI version, reinstalls when the runtime virtualenv's Python
+differs from the Python minor pinned in the checkout's `pm/lock.json`, manages plugins,
+and deploys gateway and dashboard systemd units. Run the role with privilege escalation. The target must
 support the upstream installer and systemd.
 
 ## Inputs
