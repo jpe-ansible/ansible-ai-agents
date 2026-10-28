@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.1](https://github.com/jpe-ansible/ansible-ai-agents/compare/v1.1.0...v1.1.1) (2026-10-28)
+
+
+### Bug Fixes
+
+* **hermes_runtime:** match the installed CLI version by its banner title ([#25](https://github.com/jpe-ansible/ansible-ai-agents/issues/25)) ([55c1fda](https://github.com/jpe-ansible/ansible-ai-agents/commit/55c1fda4d4b07003fad4dddaed2bd39b7cc2ecf6))
+
 ## [1.1.0](https://github.com/jpe-ansible/ansible-ai-agents/compare/v1.0.2...v1.1.0) (2026-10-28)
 
 
