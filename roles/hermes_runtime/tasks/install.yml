@@ -17,6 +17,8 @@
       - "{{ hermes_runtime_installer_path }}"
       - --dir
       - "{{ hermes_runtime_install_dir }}"
+      - --hermes-home
+      - "{{ hermes_runtime_hermes_home }}"
       - --branch
       - "{{ hermes_runtime_version_tag }}"
       - --skip-setup
@@ -24,6 +26,8 @@
       - --skip-computer-use
     creates: "{{ hermes_runtime_bin }}"
   # A hung installer fails this host alone instead of stalling every host in the play.
+  environment:
+    HERMES_HOME: "{{ hermes_runtime_hermes_home }}"
   timeout: "{{ hermes_runtime_installer_timeout }}"
 
 - name: Read Hermes CLI version before pinning
@@ -65,11 +69,17 @@
 
 - name: Read the Python minor of the Hermes runtime virtualenv before pinning
   become: true
-  ansible.builtin.command:
+  # Upstream PM's own resolver names the venv the service launcher selects under its HERMES_HOME.
+  ansible.builtin.command: &hermes_runtime_selected_python_probe
     argv:
-      - "{{ hermes_runtime_install_dir }}/venv/bin/python"
+      - python3
       - -c
-      - "import sys; print('%d.%d' % sys.version_info[:2])"
+      - >-
+        from pathlib import Path; from pm.environments import selected_venv, venv_python_version;
+        v = venv_python_version(selected_venv(Path.cwd())); print('%d.%d' % v if v else '')
+    chdir: "{{ hermes_runtime_install_dir }}"
+  environment:
+    HERMES_HOME: "{{ hermes_runtime_hermes_home }}"
   check_mode: false
   changed_when: false
   failed_when: false
@@ -102,6 +112,8 @@
       - "{{ hermes_runtime_installer_path }}"
       - --dir
       - "{{ hermes_runtime_install_dir }}"
+      - --hermes-home
+      - "{{ hermes_runtime_hermes_home }}"
       - --stage
       - "{{ item }}"
       - --skip-setup
@@ -110,6 +122,8 @@
   loop: [prerequisites, venv, python-deps, config, products, complete]
   # Runs only when the version or venv Python is off the pin, so every run changes the install.
   changed_when: true
+  environment:
+    HERMES_HOME: "{{ hermes_runtime_hermes_home }}"
   timeout: "{{ hermes_runtime_installer_timeout }}"
   when:
     - >-
@@ -147,11 +161,9 @@
 
 - name: Read the Python minor of the Hermes runtime virtualenv after install
   become: true
-  ansible.builtin.command:
-    argv:
-      - "{{ hermes_runtime_install_dir }}/venv/bin/python"
-      - -c
-      - "import sys; print('%d.%d' % sys.version_info[:2])"
+  ansible.builtin.command: *hermes_runtime_selected_python_probe
+  environment:
+    HERMES_HOME: "{{ hermes_runtime_hermes_home }}"
   check_mode: false
   changed_when: false
   failed_when: false
@@ -167,7 +179,7 @@
       - hermes_runtime_venv_python.rc == 0
       - (hermes_runtime_venv_python.stdout | trim) == hermes_runtime_pm_python
     fail_msg: >-
-      {{ hermes_runtime_install_dir }}/venv reports Python
+      The venv PM selects for {{ hermes_runtime_install_dir }} under {{ hermes_runtime_hermes_home }} reports Python
       "{{ hermes_runtime_venv_python.stdout | default('') | trim }}"
       (rc {{ hermes_runtime_venv_python.rc | default('none') }}),
       but pm/lock.json pins Python {{ hermes_runtime_pm_python }}.
