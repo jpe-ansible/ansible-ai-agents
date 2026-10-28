@@ -37,7 +37,8 @@
               'Read the installed Hermes CLI version',
               'Assert the installed CLI reports the pinned release',
               'Read the Python minor of the Hermes runtime virtualenv after install',
-              'Assert the runtime virtualenv runs the PM-pinned Python'
+              'Assert the runtime virtualenv runs the PM-pinned Python',
+              'Publish the PM-selected runtime virtualenv'
             ]
 
     - name: Select Hermes install and verification tasks
