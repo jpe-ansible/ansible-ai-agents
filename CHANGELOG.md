@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.3](https://github.com/jpe-ansible/ansible-ai-agents/compare/v1.1.2...v1.1.3) (2026-10-28)
+
+
+### Bug Fixes
+
+* **hermes_runtime:** rerun installer stages on an existing checkout ([#33](https://github.com/jpe-ansible/ansible-ai-agents/issues/33)) ([755355d](https://github.com/jpe-ansible/ansible-ai-agents/commit/755355de2ef6ae9ed575a00a129b0e8432bb1065))
+
 ## [1.1.2](https://github.com/jpe-ansible/ansible-ai-agents/compare/v1.1.1...v1.1.2) (2026-10-28)
 
 
