@@ -52,7 +52,45 @@
       (hermes_runtime_installed_version_before_pin.stdout | default(''))
     - not ansible_check_mode or hermes_runtime_installed_version_before_pin.rc == 0
 
-- name: Install or upgrade Hermes when the checkout moved
+- name: Read the PM-pinned Python from the Hermes checkout
+  become: true
+  ansible.builtin.slurp:
+    src: "{{ hermes_runtime_install_dir }}/pm/lock.json"
+  check_mode: false
+  register: hermes_runtime_pm_lock
+  when:
+    - not ansible_check_mode or hermes_runtime_installed_version_before_pin.rc == 0
+
+- name: Read the Python minor of the Hermes runtime virtualenv before pinning
+  become: true
+  ansible.builtin.command:
+    argv:
+      - "{{ hermes_runtime_install_dir }}/venv/bin/python"
+      - -c
+      - "import sys; print('%d.%d' % sys.version_info[:2])"
+  check_mode: false
+  changed_when: false
+  failed_when: false
+  register: hermes_runtime_venv_python_before_pin
+  when:
+    - not ansible_check_mode or hermes_runtime_installed_version_before_pin.rc == 0
+
+- name: Set the PM-pinned Python minor
+  ansible.builtin.set_fact:
+    hermes_runtime_pm_python: >-
+      {{ (hermes_runtime_pm_lock.content | b64decode | from_json).packages.python.version.split('.')[:2] | join('.') }}
+  when:
+    - not ansible_check_mode or hermes_runtime_installed_version_before_pin.rc == 0
+
+- name: Flag a runtime virtualenv whose Python differs from the PM pin
+  ansible.builtin.set_fact:
+    hermes_runtime_python_stale: >-
+      {{ hermes_runtime_venv_python_before_pin.rc != 0 or
+      (hermes_runtime_venv_python_before_pin.stdout | trim) != hermes_runtime_pm_python }}
+  when:
+    - not ansible_check_mode or hermes_runtime_installed_version_before_pin.rc == 0
+
+- name: Install or upgrade Hermes when the checkout moved or its runtime Python is stale
   become: true
   ansible.builtin.command:
     argv:
@@ -66,13 +104,15 @@
     creates: >-
       {{ omit if hermes_runtime_installed_version_before_pin.rc != 0 or
       ('Hermes Agent v' ~ hermes_runtime_version ~ ' (') not in
-      (hermes_runtime_installed_version_before_pin.stdout | default(''))
+      (hermes_runtime_installed_version_before_pin.stdout | default('')) or
+      hermes_runtime_python_stale | default(false)
       else hermes_runtime_bin }}
   when:
     - >-
       hermes_runtime_installed_version_before_pin.rc != 0 or
       ('Hermes Agent v' ~ hermes_runtime_version ~ ' (') not in
-      (hermes_runtime_installed_version_before_pin.stdout | default(''))
+      (hermes_runtime_installed_version_before_pin.stdout | default('')) or
+      hermes_runtime_python_stale | default(false)
     - not ansible_check_mode or hermes_runtime_installed_version_before_pin.rc == 0
 
 - name: Read the installed Hermes CLI version
@@ -97,6 +137,36 @@
       {{ hermes_runtime_bin }} --version reported
       "{{ hermes_runtime_installed_version.stdout | trim }}", which does not
       contain "Hermes Agent v{{ hermes_runtime_version }} (", the pinned release.
+  when:
+    - not (ansible_check_mode and hermes_runtime_checkout is changed)
+    - not ansible_check_mode or hermes_runtime_installed_version_before_pin.rc == 0
+
+- name: Read the Python minor of the Hermes runtime virtualenv after install
+  become: true
+  ansible.builtin.command:
+    argv:
+      - "{{ hermes_runtime_install_dir }}/venv/bin/python"
+      - -c
+      - "import sys; print('%d.%d' % sys.version_info[:2])"
+  check_mode: false
+  changed_when: false
+  failed_when: false
+  register: hermes_runtime_venv_python
+  when:
+    - not (ansible_check_mode and hermes_runtime_checkout is changed)
+    - not ansible_check_mode or hermes_runtime_installed_version_before_pin.rc == 0
+
+- name: Assert the runtime virtualenv runs the PM-pinned Python
+  ansible.builtin.assert:
+    quiet: true
+    that:
+      - hermes_runtime_venv_python.rc == 0
+      - (hermes_runtime_venv_python.stdout | trim) == hermes_runtime_pm_python
+    fail_msg: >-
+      {{ hermes_runtime_install_dir }}/venv reports Python
+      "{{ hermes_runtime_venv_python.stdout | default('') | trim }}"
+      (rc {{ hermes_runtime_venv_python.rc | default('none') }}),
+      but pm/lock.json pins Python {{ hermes_runtime_pm_python }}.
   when:
     - not (ansible_check_mode and hermes_runtime_checkout is changed)
     - not ansible_check_mode or hermes_runtime_installed_version_before_pin.rc == 0
