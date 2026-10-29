@@ -148,20 +148,176 @@
     - not ansible_check_mode or hermes_runtime_installed_version_before_pin.rc == 0
 
 - name: Read the installed Hermes CLI version
-  become: true
-  become_user: "{{ hermes_runtime_user }}"
-  environment:
-    HERMES_HOME: "{{ hermes_runtime_hermes_home }}"
-  ansible.builtin.command:
-    argv:
-      - "{{ hermes_runtime_bin }}"
-      - --version
-  check_mode: false
-  changed_when: false
-  register: hermes_runtime_installed_version
   when:
     - not (ansible_check_mode and hermes_runtime_checkout is changed)
     - not ansible_check_mode or hermes_runtime_installed_version_before_pin.rc == 0
+  block:
+    - name: Run the Hermes version query as the service user
+      become: true
+      become_user: "{{ hermes_runtime_user }}"
+      environment:
+        HERMES_HOME: "{{ hermes_runtime_hermes_home }}"
+      ansible.builtin.command:
+        argv:
+          - "{{ hermes_runtime_bin }}"
+          - --version
+      check_mode: false
+      changed_when: false
+      register: hermes_runtime_installed_version
+  rescue:
+    - name: Collect and report Hermes launcher diagnostics as root
+      become: true
+      check_mode: false
+      block:
+        - name: Read the first six lines of the Hermes launcher
+          ansible.builtin.command:
+            argv:
+              - head
+              - -n
+              - "6"
+              - --
+              - "{{ hermes_runtime_bin }}"
+          changed_when: false
+          failed_when: false
+          register: hermes_runtime_launcher_head
+
+        - name: Resolve the Hermes launcher target
+          ansible.builtin.command:
+            argv:
+              - readlink
+              - -f
+              - --
+              - "{{ hermes_runtime_bin }}"
+          changed_when: false
+          failed_when: false
+          register: hermes_runtime_launcher_target
+
+        - name: Read the first six lines of the resolved Hermes launcher
+          ansible.builtin.command:
+            argv:
+              - head
+              - -n
+              - "6"
+              - --
+              - "{{ hermes_runtime_launcher_target.stdout | default('/nonexistent', true) }}"
+          changed_when: false
+          failed_when: false
+          register: hermes_runtime_launcher_target_head
+
+        - name: Read ownership and modes along the Hermes path chain
+          ansible.builtin.command:
+            argv:
+              - stat
+              - -c
+              - "%U:%G %a %n"
+              - --
+              - /root
+              - /root/.hermes
+              - /root/.hermes/tools
+              - "{{ hermes_runtime_hermes_home }}"
+              - "{{ hermes_runtime_hermes_home }}/tools"
+              - "{{ hermes_runtime_install_dir }}"
+              - "{{ hermes_runtime_install_dir }}/.hermes/bin"
+          changed_when: false
+          failed_when: false
+          register: hermes_runtime_launcher_path_stat
+
+        - name: List Hermes install and tool directory names
+          ansible.builtin.command:
+            argv:
+              - ls
+              - -la
+              - --
+              - /root/.hermes/installs
+              - "{{ hermes_runtime_hermes_home }}/installs"
+              - /root/.hermes/tools
+              - "{{ hermes_runtime_hermes_home }}/tools"
+          changed_when: false
+          failed_when: false
+          register: hermes_runtime_launcher_directories
+
+        - name: Read Hermes facts and install stamp JSON files
+          ansible.builtin.command:
+            argv:
+              - find
+              - /root/.hermes
+              - "{{ hermes_runtime_hermes_home }}"
+              - "{{ hermes_runtime_install_dir }}/.hermes"
+              - -maxdepth
+              - "4"
+              - -type
+              - f
+              - "("
+              - -name
+              - facts.json
+              - -o
+              - -name
+              - install-stamp.json
+              - ")"
+              - -exec
+              - sh
+              - -c
+              - 'for path do printf "\n--- %s ---\n" "$path"; cat "$path"; done'
+              - sh
+              - "{}"
+              - +
+          changed_when: false
+          failed_when: false
+          register: hermes_runtime_launcher_install_metadata
+
+        - name: Resolve the Hermes virtualenv Python
+          ansible.builtin.command:
+            argv:
+              - readlink
+              - -f
+              - --
+              - "{{ hermes_runtime_install_dir }}/venv/bin/python"
+          changed_when: false
+          failed_when: false
+          register: hermes_runtime_launcher_venv_python
+
+        - name: Print Hermes launcher diagnostics to the log
+          ansible.builtin.debug:
+            msg:
+              - >-
+                Launcher first six lines (rc {{ hermes_runtime_launcher_head.rc | default('unavailable') }}):
+                {{ hermes_runtime_launcher_head.stdout | default('') }}
+                {{ hermes_runtime_launcher_head.stderr | default('') }}
+              - >-
+                Launcher resolved target (rc {{ hermes_runtime_launcher_target.rc | default('unavailable') }}):
+                {{ hermes_runtime_launcher_target.stdout | default('') }}
+                {{ hermes_runtime_launcher_target.stderr | default('') }}
+              - >-
+                Resolved launcher lines (rc
+                {{ hermes_runtime_launcher_target_head.rc | default('unavailable') }}):
+                {{ hermes_runtime_launcher_target_head.stdout | default('') }}
+                {{ hermes_runtime_launcher_target_head.stderr | default('') }}
+              - >-
+                Hermes path ownership and modes (rc
+                {{ hermes_runtime_launcher_path_stat.rc | default('unavailable') }}):
+                {{ hermes_runtime_launcher_path_stat.stdout | default('') }}
+                {{ hermes_runtime_launcher_path_stat.stderr | default('') }}
+              - >-
+                Hermes install and tool directories (rc
+                {{ hermes_runtime_launcher_directories.rc | default('unavailable') }}):
+                {{ hermes_runtime_launcher_directories.stdout | default('') }}
+                {{ hermes_runtime_launcher_directories.stderr | default('') }}
+              - >-
+                Hermes facts and install stamps (rc
+                {{ hermes_runtime_launcher_install_metadata.rc | default('unavailable') }}):
+                {{ hermes_runtime_launcher_install_metadata.stdout | default('') }}
+                {{ hermes_runtime_launcher_install_metadata.stderr | default('') }}
+              - >-
+                Hermes virtualenv Python target (rc
+                {{ hermes_runtime_launcher_venv_python.rc | default('unavailable') }}):
+                {{ hermes_runtime_launcher_venv_python.stdout | default('') }}
+                {{ hermes_runtime_launcher_venv_python.stderr | default('') }}
+
+        - name: Fail after recording Hermes launcher diagnostics
+          ansible.builtin.fail:
+            msg: >-
+              Reading {{ hermes_runtime_bin }} --version failed; inspect the preceding
+              Hermes launcher diagnostics debug output in the Semaphore log.
 
 - name: Assert the installed CLI reports the pinned release
   ansible.builtin.assert:
