@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.2](https://github.com/jpe-ansible/ansible-ai-agents/compare/v1.2.1...v1.2.2) (2026-10-29)
+
+
+### Bug Fixes
+
+* **hermes_runtime:** report the launcher binding when the version read fails ([#48](https://github.com/jpe-ansible/ansible-ai-agents/issues/48)) ([3f1a60f](https://github.com/jpe-ansible/ansible-ai-agents/commit/3f1a60fbebef66b2f7a650be2bdea0f02206cbae))
+
 ## [1.2.1](https://github.com/jpe-ansible/ansible-ai-agents/compare/v1.2.0...v1.2.1) (2026-10-28)
 
 
