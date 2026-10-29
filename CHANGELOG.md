@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.3](https://github.com/jpe-ansible/ansible-ai-agents/compare/v1.2.2...v1.2.3) (2026-10-29)
+
+
+### Bug Fixes
+
+* **hermes_runtime:** remove root-home install state by listing it ([#51](https://github.com/jpe-ansible/ansible-ai-agents/issues/51)) ([e402860](https://github.com/jpe-ansible/ansible-ai-agents/commit/e4028605e886263a168353b3144eb8fd897080b8))
+
 ## [1.2.2](https://github.com/jpe-ansible/ansible-ai-agents/compare/v1.2.1...v1.2.2) (2026-10-29)
 
 
