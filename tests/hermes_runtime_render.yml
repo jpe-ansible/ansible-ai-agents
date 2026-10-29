@@ -27,7 +27,8 @@
             [
               'Fetch the pinned Hermes installer with checksum verification',
               'Run the verified installer for a missing Hermes CLI',
-              'Remove installer state for this checkout under root\'s Hermes home',
+              'Find installer state under root\'s Hermes home',
+              'Remove installer state under root\'s Hermes home',
               'Read Hermes CLI version before pinning',
               'Pin the Hermes checkout to the requested release tag',
               'Read the PM-pinned Python from the Hermes checkout',
@@ -202,6 +203,39 @@
           - >-
             hermes_runtime_postinstall_version_block_task.rescue[0].block[8]['ansible.builtin.fail'].msg is
             search('Semaphore log')
+
+    - name: Select root-home installer state tasks
+      ansible.builtin.set_fact:
+        hermes_runtime_root_find_task: >-
+          {{ hermes_runtime_install_tasks |
+          selectattr('name', 'equalto', "Find installer state under root's Hermes home") |
+          first }}
+        hermes_runtime_root_remove_task: >-
+          {{ hermes_runtime_install_tasks |
+          selectattr('name', 'equalto', "Remove installer state under root's Hermes home") |
+          first }}
+
+    - name: Assert root-home installer state is removed by listing it
+      ansible.builtin.assert:
+        quiet: true
+        that:
+          - hermes_runtime_root_find_task['ansible.builtin.find'].paths == '/root/.hermes/installs'
+          - hermes_runtime_root_find_task['ansible.builtin.find'].file_type == 'directory'
+          - hermes_runtime_root_find_task['ansible.builtin.find'].recurse == false
+          - hermes_runtime_root_find_task.become == true
+          - hermes_runtime_root_find_task.check_mode == false
+          - hermes_runtime_root_find_task.register == 'hermes_runtime_root_installs'
+          - hermes_runtime_root_find_task.when == "hermes_runtime_hermes_home != '/root/.hermes'"
+          - "'/root/.hermes/tools' not in hermes_runtime_root_find_task['ansible.builtin.find'].paths"
+          - "'hermes-agent' not in hermes_runtime_root_find_task['ansible.builtin.find'].paths"
+          - hermes_runtime_root_remove_task['ansible.builtin.file'].state == 'absent'
+          - hermes_runtime_root_remove_task['ansible.builtin.file'].path == '{' ~ '{ item.path }}'
+          - >-
+            hermes_runtime_root_remove_task.loop ==
+            '{' ~ '{ hermes_runtime_root_installs.files | default([]) }}'
+          - hermes_runtime_root_remove_task.become == true
+          - hermes_runtime_root_remove_task.when == hermes_runtime_root_find_task.when
+          - hermes_runtime_root_remove_task.loop_control.label == '{' ~ '{ item.path }}'
 
     - name: Assert the runtime virtualenv Python is checked against the PM pin
       ansible.builtin.assert:

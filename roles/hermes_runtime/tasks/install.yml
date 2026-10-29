@@ -32,12 +32,26 @@
 
 # Upstream PM binds the checkout's launcher to whichever home holds installs/<key>/facts.json for it,
 # preferring root's platform-default home; state there from a root-home install would pin the service to
-# an interpreter it cannot execute.
-- name: Remove installer state for this checkout under root's Hermes home
+# an interpreter it cannot execute. The key is home-dependent, so root's install state is removed by
+# listing the installs directory rather than by a computed key.
+- name: Find installer state under root's Hermes home
+  become: true
+  ansible.builtin.find:
+    paths: /root/.hermes/installs
+    file_type: directory
+    recurse: false
+  check_mode: false
+  register: hermes_runtime_root_installs
+  when: hermes_runtime_hermes_home != '/root/.hermes'
+
+- name: Remove installer state under root's Hermes home
   become: true
   ansible.builtin.file:
-    path: "/root/.hermes/installs/{{ (hermes_runtime_install_dir | hash('sha256'))[:16] }}"
+    path: "{{ item.path }}"
     state: absent
+  loop: "{{ hermes_runtime_root_installs.files | default([]) }}"
+  loop_control:
+    label: "{{ item.path }}"
   when: hermes_runtime_hermes_home != '/root/.hermes'
 
 - name: Read Hermes CLI version before pinning
