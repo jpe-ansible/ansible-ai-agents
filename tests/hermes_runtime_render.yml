@@ -61,10 +61,14 @@
           selectattr('name', 'equalto',
           'Install or upgrade Hermes when the checkout moved or its runtime Python is stale') |
           first }}
-        hermes_runtime_postinstall_version_task: >-
+        hermes_runtime_postinstall_version_block_task: >-
           {{ hermes_runtime_install_tasks |
           selectattr('name', 'equalto', 'Read the installed Hermes CLI version') |
           first }}
+        hermes_runtime_postinstall_version_task: >-
+          {{ (hermes_runtime_install_tasks |
+          selectattr('name', 'equalto', 'Read the installed Hermes CLI version') |
+          first).block | first }}
         hermes_runtime_postinstall_assert_task: >-
           {{ hermes_runtime_install_tasks |
           selectattr('name', 'equalto', 'Assert the installed CLI reports the pinned release') |
@@ -134,11 +138,11 @@
           - hermes_runtime_postinstall_version_task.check_mode == false
           - hermes_runtime_postinstall_version_task.changed_when == false
           - hermes_runtime_postinstall_version_task.register == 'hermes_runtime_installed_version'
-          - hermes_runtime_postinstall_version_task.when | length == 2
+          - hermes_runtime_postinstall_version_block_task.when | length == 2
           - >-
-            hermes_runtime_postinstall_version_task.when[0] ==
+            hermes_runtime_postinstall_version_block_task.when[0] ==
             'not (ansible_check_mode and hermes_runtime_checkout is changed)'
-          - hermes_runtime_postinstall_version_task.when[1] == hermes_runtime_check_mode_guard
+          - hermes_runtime_postinstall_version_block_task.when[1] == hermes_runtime_check_mode_guard
           - hermes_runtime_postinstall_assert_task['ansible.builtin.assert'].quiet == true
           - >-
             hermes_runtime_postinstall_assert_task['ansible.builtin.assert'].that ==
@@ -153,6 +157,51 @@
             hermes_runtime_postinstall_assert_task.when[0] ==
             'not (ansible_check_mode and hermes_runtime_checkout is changed)'
           - hermes_runtime_postinstall_assert_task.when[1] == hermes_runtime_check_mode_guard
+
+    - name: Assert version-read failures collect diagnostics before failing
+      ansible.builtin.assert:
+        quiet: true
+        that:
+          - hermes_runtime_postinstall_version_block_task.block | length == 1
+          - hermes_runtime_postinstall_version_task.register == 'hermes_runtime_installed_version'
+          - hermes_runtime_postinstall_version_task.become == true
+          - hermes_runtime_postinstall_version_task.become_user == '{' ~ '{ hermes_runtime_user }}'
+          - hermes_runtime_postinstall_version_task.environment.HERMES_HOME == '{' ~ '{ hermes_runtime_hermes_home }}'
+          - hermes_runtime_postinstall_version_block_task.rescue | length == 1
+          - hermes_runtime_postinstall_version_block_task.rescue[0].become == true
+          - hermes_runtime_postinstall_version_block_task.rescue[0].check_mode == false
+          - hermes_runtime_postinstall_version_block_task.rescue[0].block | length == 9
+          - >-
+            hermes_runtime_postinstall_version_block_task.rescue[0].block[0:7] |
+            map(attribute='changed_when') | list == [false, false, false, false, false, false, false]
+          - >-
+            hermes_runtime_postinstall_version_block_task.rescue[0].block[0:7] |
+            map(attribute='failed_when') | list == [false, false, false, false, false, false, false]
+          - >-
+            hermes_runtime_postinstall_version_block_task.rescue[0].block[0]['ansible.builtin.command'].argv[0] ==
+            'head'
+          - >-
+            hermes_runtime_postinstall_version_block_task.rescue[0].block[1]['ansible.builtin.command'].argv[0] ==
+            'readlink'
+          - >-
+            hermes_runtime_postinstall_version_block_task.rescue[0].block[3]['ansible.builtin.command'].argv[0] ==
+            'stat'
+          - >-
+            hermes_runtime_postinstall_version_block_task.rescue[0].block[4]['ansible.builtin.command'].argv[0] ==
+            'ls'
+          - >-
+            hermes_runtime_postinstall_version_block_task.rescue[0].block[5]['ansible.builtin.command'].argv[0] ==
+            'find'
+          - >-
+            hermes_runtime_postinstall_version_block_task.rescue[0].block[6]['ansible.builtin.command'].argv[0] ==
+            'readlink'
+          - >-
+            hermes_runtime_postinstall_version_block_task.rescue[0].block[7]['ansible.builtin.debug'].msg |
+            type_debug == 'list'
+          - hermes_runtime_postinstall_version_block_task.rescue[0].block[7]['ansible.builtin.debug'].msg | length == 7
+          - >-
+            hermes_runtime_postinstall_version_block_task.rescue[0].block[8]['ansible.builtin.fail'].msg is
+            search('Semaphore log')
 
     - name: Assert the runtime virtualenv Python is checked against the PM pin
       ansible.builtin.assert:
