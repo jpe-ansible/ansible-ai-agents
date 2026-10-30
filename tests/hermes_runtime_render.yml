@@ -298,6 +298,7 @@
         that:
           - hermes_runtime_repair_find_task['ansible.builtin.find'].patterns == ['.repair-incomplete']
           - hermes_runtime_repair_find_task['ansible.builtin.find'].hidden == true
+          - hermes_runtime_repair_find_task['ansible.builtin.find'].recurse == true
           - hermes_runtime_repair_task.become_user == '{' ~ '{ hermes_runtime_user }}'
           - hermes_runtime_repair_task['ansible.builtin.command'].argv[1:] == ['pm', 'repair']
           - "'hermes_runtime_repair_markers.matched' in hermes_runtime_repair_task.when"
