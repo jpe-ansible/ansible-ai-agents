@@ -213,6 +213,7 @@
     paths: "{{ hermes_runtime_hermes_home }}/installs"
     patterns: [.repair-incomplete]
     hidden: true
+    recurse: true
     depth: 2
   check_mode: false
   register: hermes_runtime_repair_markers
