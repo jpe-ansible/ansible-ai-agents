@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.8](https://github.com/jpe-ansible/ansible-ai-agents/compare/v1.2.7...v1.2.8) (2026-10-30)
+
+
+### Bug Fixes
+
+* **hermes_runtime:** search install state recursively for unfinished repairs ([#66](https://github.com/jpe-ansible/ansible-ai-agents/issues/66)) ([389c4be](https://github.com/jpe-ansible/ansible-ai-agents/commit/389c4beb6672d3d5813a55119f9b500402128467))
+
 ## [1.2.7](https://github.com/jpe-ansible/ansible-ai-agents/compare/v1.2.6...v1.2.7) (2026-10-30)
 
 
