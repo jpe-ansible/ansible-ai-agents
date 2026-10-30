@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.7](https://github.com/jpe-ansible/ansible-ai-agents/compare/v1.2.6...v1.2.7) (2026-10-30)
+
+
+### Bug Fixes
+
+* **hermes_runtime:** repair an unfinished dependency environment as the service user ([#63](https://github.com/jpe-ansible/ansible-ai-agents/issues/63)) ([e813ee6](https://github.com/jpe-ansible/ansible-ai-agents/commit/e813ee67dd48a60611e89e5c5cf23f07f2e1ef5a))
+
 ## [1.2.6](https://github.com/jpe-ansible/ansible-ai-agents/compare/v1.2.5...v1.2.6) (2026-10-30)
 
 
