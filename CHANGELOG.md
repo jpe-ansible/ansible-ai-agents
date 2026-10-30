@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.5](https://github.com/jpe-ansible/ansible-ai-agents/compare/v1.2.4...v1.2.5) (2026-10-30)
+
+
+### Bug Fixes
+
+* **hermes_runtime:** give the service user its install and tool state ([#57](https://github.com/jpe-ansible/ansible-ai-agents/issues/57)) ([e57a9fe](https://github.com/jpe-ansible/ansible-ai-agents/commit/e57a9fe287bf418099ae53dc5e438ee0f78d22df))
+
 ## [1.2.4](https://github.com/jpe-ansible/ansible-ai-agents/compare/v1.2.3...v1.2.4) (2026-10-30)
 
 
