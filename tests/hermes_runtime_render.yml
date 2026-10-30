@@ -29,6 +29,8 @@
               'Run the verified installer for a missing Hermes CLI',
               'Find installer state under root\'s Hermes home',
               'Remove installer state under root\'s Hermes home',
+              'Find checkout launchers bound to root\'s Hermes home',
+              'Remove checkout launchers bound to root\'s Hermes home',
               'Read Hermes CLI version before pinning',
               'Pin the Hermes checkout to the requested release tag',
               'Read the PM-pinned Python from the Hermes checkout',
@@ -236,6 +238,34 @@
           - hermes_runtime_root_remove_task.become == true
           - hermes_runtime_root_remove_task.when == hermes_runtime_root_find_task.when
           - hermes_runtime_root_remove_task.loop_control.label == '{' ~ '{ item.path }}'
+
+    - name: Select root-bound launcher tasks
+      ansible.builtin.set_fact:
+        hermes_runtime_launcher_find_task: >-
+          {{ hermes_runtime_install_tasks |
+          selectattr('name', 'equalto', "Find checkout launchers bound to root's Hermes home") |
+          first }}
+        hermes_runtime_launcher_remove_task: >-
+          {{ hermes_runtime_install_tasks |
+          selectattr('name', 'equalto', "Remove checkout launchers bound to root's Hermes home") |
+          first }}
+
+    - name: Assert only launchers that exec root's store are removed
+      ansible.builtin.assert:
+        quiet: true
+        that:
+          - >-
+            hermes_runtime_launcher_find_task['ansible.builtin.find'].paths ==
+            '{' ~ '{ hermes_runtime_install_dir }}/.hermes/bin'
+          - hermes_runtime_launcher_find_task['ansible.builtin.find'].patterns == ['hermes', 'hermes-acp']
+          - "'/root/' in hermes_runtime_launcher_find_task['ansible.builtin.find'].contains"
+          - hermes_runtime_launcher_find_task.check_mode == false
+          - hermes_runtime_launcher_find_task.when == hermes_runtime_root_find_task.when
+          - hermes_runtime_launcher_remove_task['ansible.builtin.file'].state == 'absent'
+          - >-
+            hermes_runtime_launcher_remove_task.loop ==
+            '{' ~ '{ hermes_runtime_root_bound_launchers.files | default([]) }}'
+          - hermes_runtime_launcher_remove_task.when == hermes_runtime_root_find_task.when
 
     - name: Assert the runtime virtualenv Python is checked against the PM pin
       ansible.builtin.assert:
