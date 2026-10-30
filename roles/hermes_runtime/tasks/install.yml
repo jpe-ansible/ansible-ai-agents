@@ -54,6 +54,28 @@
     label: "{{ item.path }}"
   when: hermes_runtime_hermes_home != '/root/.hermes'
 
+# Upstream keeps an existing checkout launcher while its interpreter still exists, so a launcher a root-home
+# install minted stays bound to root's store. Removing it lets the install stages republish it for the service home.
+- name: Find checkout launchers bound to root's Hermes home
+  become: true
+  ansible.builtin.find:
+    paths: "{{ hermes_runtime_install_dir }}/.hermes/bin"
+    patterns: [hermes, hermes-acp]
+    contains: '.*/root/\.hermes/.*'
+  check_mode: false
+  register: hermes_runtime_root_bound_launchers
+  when: hermes_runtime_hermes_home != '/root/.hermes'
+
+- name: Remove checkout launchers bound to root's Hermes home
+  become: true
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: absent
+  loop: "{{ hermes_runtime_root_bound_launchers.files | default([]) }}"
+  loop_control:
+    label: "{{ item.path }}"
+  when: hermes_runtime_hermes_home != '/root/.hermes'
+
 - name: Read Hermes CLI version before pinning
   become: true
   become_user: "{{ hermes_runtime_user }}"
