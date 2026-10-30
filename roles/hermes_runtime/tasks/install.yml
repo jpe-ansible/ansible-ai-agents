@@ -207,6 +207,21 @@
   when: hermes_runtime_hermes_home != '/root/.hermes'
 
 # Launches stop retrying an unfinished dependency repair after a few attempts; upstream's remedy is `hermes pm repair`.
+# The root-run installer writes the build-metadata stamp 0600; the service user's PM and version reads need it.
+- name: Check the Hermes install stamp
+  become: true
+  ansible.builtin.stat:
+    path: "{{ hermes_runtime_install_dir }}/install-stamp.json"
+  check_mode: false
+  register: hermes_runtime_install_stamp
+
+- name: Let the service user read the Hermes install stamp
+  become: true
+  ansible.builtin.file:
+    path: "{{ hermes_runtime_install_dir }}/install-stamp.json"
+    mode: "0644"
+  when: hermes_runtime_install_stamp.stat.exists
+
 - name: Find unfinished Hermes dependency repairs
   become: true
   ansible.builtin.find:

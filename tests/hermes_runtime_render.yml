@@ -40,6 +40,8 @@
               'Flag a runtime virtualenv whose Python differs from the PM pin',
               'Install or upgrade Hermes when the checkout moved or its runtime Python is stale',
               'Give the service user its Hermes install and tool state',
+              'Check the Hermes install stamp',
+              'Let the service user read the Hermes install stamp',
               'Find unfinished Hermes dependency repairs',
               'Repair the Hermes dependency environment as the service user',
               'Read the installed Hermes CLI version',
@@ -284,6 +286,18 @@
           - >-
             ('directory = ' ~ '{' ~ '{ hermes_runtime_install_dir }}') in
             hermes_runtime_safe_directory_task['ansible.builtin.blockinfile'].block
+
+    - name: Assert the service user can read the install stamp
+      vars:
+        hermes_runtime_stamp_mode_task: >-
+          {{ hermes_runtime_install_tasks |
+          selectattr('name', 'equalto', 'Let the service user read the Hermes install stamp') | first }}
+      ansible.builtin.assert:
+        quiet: true
+        that:
+          - hermes_runtime_stamp_mode_task['ansible.builtin.file'].mode == '0644'
+          - hermes_runtime_stamp_mode_task['ansible.builtin.file'].path is search('/install-stamp.json$')
+          - hermes_runtime_stamp_mode_task.when == 'hermes_runtime_install_stamp.stat.exists'
 
     - name: Assert unfinished dependency repairs run as the service user
       vars:
