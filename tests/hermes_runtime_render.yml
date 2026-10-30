@@ -38,6 +38,7 @@
               'Set the PM-pinned Python minor',
               'Flag a runtime virtualenv whose Python differs from the PM pin',
               'Install or upgrade Hermes when the checkout moved or its runtime Python is stale',
+              'Give the service user its Hermes install and tool state',
               'Read the installed Hermes CLI version',
               'Assert the installed CLI reports the pinned release',
               'Read the Python minor of the Hermes runtime virtualenv after install',
@@ -266,6 +267,20 @@
             hermes_runtime_launcher_remove_task.loop ==
             '{' ~ '{ hermes_runtime_root_bound_launchers.files | default([]) }}'
           - hermes_runtime_launcher_remove_task.when == hermes_runtime_root_find_task.when
+
+    - name: Assert the service user owns its install and tool state
+      vars:
+        hermes_runtime_state_owner_task: >-
+          {{ hermes_runtime_install_tasks |
+          selectattr('name', 'equalto', 'Give the service user its Hermes install and tool state') |
+          first }}
+      ansible.builtin.assert:
+        quiet: true
+        that:
+          - hermes_runtime_state_owner_task['ansible.builtin.file'].owner == '{' ~ '{ hermes_runtime_user }}'
+          - hermes_runtime_state_owner_task['ansible.builtin.file'].recurse == true
+          - hermes_runtime_state_owner_task.loop == ['installs', 'tools']
+          - hermes_runtime_state_owner_task.when == hermes_runtime_root_find_task.when
 
     - name: Assert the runtime virtualenv Python is checked against the PM pin
       ansible.builtin.assert:

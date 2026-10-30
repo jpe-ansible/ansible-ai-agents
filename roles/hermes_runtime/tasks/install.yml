@@ -183,6 +183,17 @@
       hermes_runtime_python_stale | default(false)
     - not ansible_check_mode or hermes_runtime_installed_version_before_pin.rc == 0
 
+# The installer runs as root, so the tool and dependency state it writes under the service home is root-owned 0600.
+- name: Give the service user its Hermes install and tool state
+  become: true
+  ansible.builtin.file:
+    path: "{{ hermes_runtime_hermes_home }}/{{ item }}"
+    state: directory
+    owner: "{{ hermes_runtime_user }}"
+    recurse: true
+  loop: [installs, tools]
+  when: hermes_runtime_hermes_home != '/root/.hermes'
+
 - name: Read the installed Hermes CLI version
   when:
     - not (ansible_check_mode and hermes_runtime_checkout is changed)
