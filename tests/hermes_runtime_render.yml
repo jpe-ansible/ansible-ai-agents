@@ -31,6 +31,7 @@
               'Remove installer state under root\'s Hermes home',
               'Find checkout launchers bound to root\'s Hermes home',
               'Remove checkout launchers bound to root\'s Hermes home',
+              'Trust the root-owned Hermes checkout in the system git config',
               'Read Hermes CLI version before pinning',
               'Pin the Hermes checkout to the requested release tag',
               'Read the PM-pinned Python from the Hermes checkout',
@@ -267,6 +268,20 @@
             hermes_runtime_launcher_remove_task.loop ==
             '{' ~ '{ hermes_runtime_root_bound_launchers.files | default([]) }}'
           - hermes_runtime_launcher_remove_task.when == hermes_runtime_root_find_task.when
+
+    - name: Assert the service user's git trusts the Hermes checkout
+      vars:
+        hermes_runtime_safe_directory_task: >-
+          {{ hermes_runtime_install_tasks |
+          selectattr('name', 'equalto', 'Trust the root-owned Hermes checkout in the system git config') |
+          first }}
+      ansible.builtin.assert:
+        quiet: true
+        that:
+          - hermes_runtime_safe_directory_task['ansible.builtin.blockinfile'].path == '/etc/gitconfig'
+          - >-
+            ('directory = ' ~ '{' ~ '{ hermes_runtime_install_dir }}') in
+            hermes_runtime_safe_directory_task['ansible.builtin.blockinfile'].block
 
     - name: Assert the service user owns its install and tool state
       vars:

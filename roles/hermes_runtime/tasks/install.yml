@@ -76,6 +76,18 @@
     label: "{{ item.path }}"
   when: hermes_runtime_hermes_home != '/root/.hermes'
 
+# Hermes reads its version from git; git refuses the root-owned checkout to any other user without this.
+- name: Trust the root-owned Hermes checkout in the system git config
+  become: true
+  ansible.builtin.blockinfile:
+    path: /etc/gitconfig
+    create: true
+    mode: "0644"
+    marker: "# {mark} hermes_runtime checkout"
+    block: |
+      [safe]
+      	directory = {{ hermes_runtime_install_dir }}
+
 - name: Read Hermes CLI version before pinning
   become: true
   become_user: "{{ hermes_runtime_user }}"

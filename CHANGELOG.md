@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.6](https://github.com/jpe-ansible/ansible-ai-agents/compare/v1.2.5...v1.2.6) (2026-10-30)
+
+
+### Bug Fixes
+
+* **hermes_runtime:** trust the root-owned checkout in the system git config ([#60](https://github.com/jpe-ansible/ansible-ai-agents/issues/60)) ([5541595](https://github.com/jpe-ansible/ansible-ai-agents/commit/5541595a7abfec80df4a123f542a640bc76b0d10))
+
 ## [1.2.5](https://github.com/jpe-ansible/ansible-ai-agents/compare/v1.2.4...v1.2.5) (2026-10-30)
 
 
