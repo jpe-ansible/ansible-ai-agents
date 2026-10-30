@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.9](https://github.com/jpe-ansible/ansible-ai-agents/compare/v1.2.8...v1.2.9) (2026-10-30)
+
+
+### Bug Fixes
+
+* **hermes_runtime:** let the service user read the install stamp ([#69](https://github.com/jpe-ansible/ansible-ai-agents/issues/69)) ([c151b74](https://github.com/jpe-ansible/ansible-ai-agents/commit/c151b74024662efeac3abb0f36e9ee0362a14a49))
+
 ## [1.2.8](https://github.com/jpe-ansible/ansible-ai-agents/compare/v1.2.7...v1.2.8) (2026-10-30)
 
 
