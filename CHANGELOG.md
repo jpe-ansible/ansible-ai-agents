@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.4](https://github.com/jpe-ansible/ansible-ai-agents/compare/v1.2.3...v1.2.4) (2026-10-30)
+
+
+### Bug Fixes
+
+* **hermes_runtime:** remove checkout launchers bound to root's Hermes home ([#54](https://github.com/jpe-ansible/ansible-ai-agents/issues/54)) ([8809291](https://github.com/jpe-ansible/ansible-ai-agents/commit/880929160a6293864b9f34b348c1c794453b2bad))
+
 ## [1.2.3](https://github.com/jpe-ansible/ansible-ai-agents/compare/v1.2.2...v1.2.3) (2026-10-29)
 
 
