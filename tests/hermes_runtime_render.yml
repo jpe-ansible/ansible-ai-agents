@@ -40,6 +40,8 @@
               'Flag a runtime virtualenv whose Python differs from the PM pin',
               'Install or upgrade Hermes when the checkout moved or its runtime Python is stale',
               'Give the service user its Hermes install and tool state',
+              'Find unfinished Hermes dependency repairs',
+              'Repair the Hermes dependency environment as the service user',
               'Read the installed Hermes CLI version',
               'Assert the installed CLI reports the pinned release',
               'Read the Python minor of the Hermes runtime virtualenv after install',
@@ -282,6 +284,23 @@
           - >-
             ('directory = ' ~ '{' ~ '{ hermes_runtime_install_dir }}') in
             hermes_runtime_safe_directory_task['ansible.builtin.blockinfile'].block
+
+    - name: Assert unfinished dependency repairs run as the service user
+      vars:
+        hermes_runtime_repair_find_task: >-
+          {{ hermes_runtime_install_tasks |
+          selectattr('name', 'equalto', 'Find unfinished Hermes dependency repairs') | first }}
+        hermes_runtime_repair_task: >-
+          {{ hermes_runtime_install_tasks |
+          selectattr('name', 'equalto', 'Repair the Hermes dependency environment as the service user') | first }}
+      ansible.builtin.assert:
+        quiet: true
+        that:
+          - hermes_runtime_repair_find_task['ansible.builtin.find'].patterns == ['.repair-incomplete']
+          - hermes_runtime_repair_find_task['ansible.builtin.find'].hidden == true
+          - hermes_runtime_repair_task.become_user == '{' ~ '{ hermes_runtime_user }}'
+          - hermes_runtime_repair_task['ansible.builtin.command'].argv[1:] == ['pm', 'repair']
+          - "'hermes_runtime_repair_markers.matched' in hermes_runtime_repair_task.when"
 
     - name: Assert the service user owns its install and tool state
       vars:
