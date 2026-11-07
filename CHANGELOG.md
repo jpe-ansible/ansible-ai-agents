@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.10](https://github.com/jpe-ansible/ansible-ai-agents/compare/v1.2.9...v1.2.10) (2026-11-04)
+
+
+### Bug Fixes
+
+* **hermes_runtime:** set the plugin directory mode from the source ([#72](https://github.com/jpe-ansible/ansible-ai-agents/issues/72)) ([5dfbca7](https://github.com/jpe-ansible/ansible-ai-agents/commit/5dfbca7f46193868fb62a6265ecbc5ab61bee6d7))
+
 ## [1.2.9](https://github.com/jpe-ansible/ansible-ai-agents/compare/v1.2.8...v1.2.9) (2026-10-30)
 
 
