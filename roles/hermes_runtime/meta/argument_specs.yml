@@ -31,6 +31,10 @@ argument_specs:
         type: int
         description:
           - Seconds the first-install run may take before the task fails for that host.
+      hermes_runtime_installer_skip_browser: &hermes_runtime_installer_skip_browser
+        type: bool
+        description:
+          - Pass --skip-browser to the installer, which then does not download its own Chromium.
       hermes_runtime_install_dir: &hermes_runtime_install_dir
         type: path
         description:
@@ -210,6 +214,7 @@ argument_specs:
       hermes_runtime_installer_sha256: *hermes_runtime_installer_sha256
       hermes_runtime_installer_path: *hermes_runtime_installer_path
       hermes_runtime_installer_timeout: *hermes_runtime_installer_timeout
+      hermes_runtime_installer_skip_browser: *hermes_runtime_installer_skip_browser
       hermes_runtime_install_dir: *hermes_runtime_install_dir
       hermes_runtime_bin: *hermes_runtime_bin
       hermes_runtime_hermes_home: *hermes_runtime_hermes_home

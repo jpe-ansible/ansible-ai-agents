@@ -12,18 +12,11 @@
 - name: Run the verified installer for a missing Hermes CLI
   become: true
   ansible.builtin.command:
-    argv:
-      - bash
-      - "{{ hermes_runtime_installer_path }}"
-      - --dir
-      - "{{ hermes_runtime_install_dir }}"
-      - --hermes-home
-      - "{{ hermes_runtime_hermes_home }}"
-      - --branch
-      - "{{ hermes_runtime_version_tag }}"
-      - --skip-setup
-      - --non-interactive
-      - --skip-computer-use
+    argv: >-
+      {{ ['bash', hermes_runtime_installer_path, '--dir', hermes_runtime_install_dir,
+          '--hermes-home', hermes_runtime_hermes_home, '--branch', hermes_runtime_version_tag,
+          '--skip-setup', '--non-interactive', '--skip-computer-use']
+         + (['--skip-browser'] if hermes_runtime_installer_skip_browser | bool else []) }}
     creates: "{{ hermes_runtime_bin }}"
   # A hung installer fails this host alone instead of stalling every host in the play.
   environment:
@@ -169,18 +162,11 @@
 - name: Install or upgrade Hermes when the checkout moved or its runtime Python is stale
   become: true
   ansible.builtin.command:
-    argv:
-      - bash
-      - "{{ hermes_runtime_installer_path }}"
-      - --dir
-      - "{{ hermes_runtime_install_dir }}"
-      - --hermes-home
-      - "{{ hermes_runtime_hermes_home }}"
-      - --stage
-      - "{{ item }}"
-      - --skip-setup
-      - --non-interactive
-      - --skip-computer-use
+    argv: >-
+      {{ ['bash', hermes_runtime_installer_path, '--dir', hermes_runtime_install_dir,
+          '--hermes-home', hermes_runtime_hermes_home, '--stage', item,
+          '--skip-setup', '--non-interactive', '--skip-computer-use']
+         + (['--skip-browser'] if hermes_runtime_installer_skip_browser | bool else []) }}
   loop: [prerequisites, venv, python-deps, config, products, complete]
   # Runs only when the version or venv Python is off the pin, so every run changes the install.
   changed_when: true

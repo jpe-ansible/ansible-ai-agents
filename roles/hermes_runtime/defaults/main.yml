@@ -8,6 +8,8 @@ hermes_runtime_installer_url: >-
 hermes_runtime_installer_sha256: "99cb3691d55019c6973a7acb775a915648666cc24e483ca827a1cdbb3531a674"
 hermes_runtime_installer_path: "/usr/local/lib/hermes-agent-installer-{{ hermes_runtime_version }}.sh"
 hermes_runtime_installer_timeout: 900
+# true passes --skip-browser, so the installer does not download its own Chromium.
+hermes_runtime_installer_skip_browser: false
 hermes_runtime_install_dir: /usr/local/lib/hermes-agent
 hermes_runtime_bin: /usr/local/bin/hermes
 hermes_runtime_dashboard_web_dist: "{{ hermes_runtime_install_dir }}/hermes_cli/web_dist"
