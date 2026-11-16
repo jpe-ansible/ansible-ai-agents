@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.0](https://github.com/jpe-ansible/ansible-ai-agents/compare/v1.2.10...v1.3.0) (2026-11-16)
+
+
+### Features
+
+* **hermes_runtime:** add an installer skip-browser switch ([#78](https://github.com/jpe-ansible/ansible-ai-agents/issues/78)) ([2b965f8](https://github.com/jpe-ansible/ansible-ai-agents/commit/2b965f8684a7fde57bd4edad0f43a48b29642221))
+
 ## [1.2.10](https://github.com/jpe-ansible/ansible-ai-agents/compare/v1.2.9...v1.2.10) (2026-11-04)
 
 
