@@ -126,15 +126,25 @@
           - hermes_runtime_upgrade_task.when[1] == hermes_runtime_check_mode_guard
           - "'--branch' not in hermes_runtime_upgrade_task['ansible.builtin.command'].argv"
           - "'repository' not in hermes_runtime_upgrade_task.loop"
-          - hermes_runtime_upgrade_task['ansible.builtin.command'].argv[2] == '--dir'
-          - hermes_runtime_initial_install_task['ansible.builtin.command'].argv[2] == '--dir'
+          - >-
+            "'--dir', hermes_runtime_install_dir," in
+            hermes_runtime_upgrade_task['ansible.builtin.command'].argv
+          - >-
+            "'--dir', hermes_runtime_install_dir," in
+            hermes_runtime_initial_install_task['ansible.builtin.command'].argv
           - "'--hermes-home' in hermes_runtime_upgrade_task['ansible.builtin.command'].argv"
           - "'--hermes-home' in hermes_runtime_initial_install_task['ansible.builtin.command'].argv"
           - "'selected_venv' in hermes_runtime_venv_after_task['ansible.builtin.command'].argv[2]"
           - >-
             hermes_runtime_venv_before_task['ansible.builtin.command'] ==
             hermes_runtime_venv_after_task['ansible.builtin.command']
-          - hermes_runtime_upgrade_task['ansible.builtin.command'].argv[6] == '--stage'
+          - "\"'--stage', item,\" in hermes_runtime_upgrade_task['ansible.builtin.command'].argv"
+          - >-
+            "+ (['--skip-browser'] if hermes_runtime_installer_skip_browser | bool else [])" in
+            hermes_runtime_upgrade_task['ansible.builtin.command'].argv
+          - >-
+            "+ (['--skip-browser'] if hermes_runtime_installer_skip_browser | bool else [])" in
+            hermes_runtime_initial_install_task['ansible.builtin.command'].argv
 
     - name: Assert post-install verification tasks remain unchanged
       ansible.builtin.assert:
