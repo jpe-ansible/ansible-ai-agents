@@ -385,6 +385,9 @@
           {{ hermes_runtime_archive_tasks | rejectattr('delegate_to', 'defined') | list }}
         hermes_runtime_role_defaults: >-
           {{ lookup('file', playbook_dir ~ '/../roles/hermes_runtime/defaults/main.yml') | from_yaml }}
+        hermes_runtime_prepare_include: >-
+          {{ lookup('file', playbook_dir ~ '/../roles/hermes_runtime/tasks/plugins.yml') | from_yaml
+             | selectattr('name', 'equalto', 'Prepare each checksum-pinned Hermes plugin archive') | first }}
       ansible.builtin.assert:
         quiet: true
         that:
@@ -393,6 +396,13 @@
           - hermes_runtime_fetch_task in hermes_runtime_controller_tasks
           - hermes_runtime_controller_tasks | map(attribute='delegate_to') | unique | list == ['localhost']
           - hermes_runtime_controller_tasks | map(attribute='run_once') | unique | list == [true]
+          # The controller has no sudo; a consumer's ansible_become var must not reach these tasks.
+          - >-
+            hermes_runtime_controller_tasks | map(attribute='vars.ansible_become', default=none)
+            | unique | list == [false]
+          - hermes_runtime_controller_tasks | map(attribute='check_mode', default=none) | unique | list == [false]
+          - hermes_runtime_prepare_include.when is not defined
+
           - >-
             hermes_runtime_extract_task['ansible.builtin.unarchive'].include ==
             ['{' ~ '{ hermes_runtime_plugin_archive.archive_subdir }}']
@@ -405,6 +415,88 @@
         quiet: true
         that:
           - hermes_runtime_units_task.when == hermes_runtime_check_mode_guard
+
+- name: Prepare a plugin archive on the controller in check mode under an inherited become var
+  hosts: localhost
+  gather_facts: false
+  vars:
+    # A consumer's group var, as an inventory sets it. The escalation binary is missing, so any attempt fails.
+    ansible_become: true
+    ansible_become_exe: /nonexistent/become
+  tasks:
+    - name: Build the archive fixture without escalation
+      vars:
+        ansible_become: false
+      block:
+        - name: Create a temporary fixture directory
+          ansible.builtin.tempfile:
+            state: directory
+          register: hermes_runtime_archive_fixture
+
+        - name: Create the fixture plugin directory
+          ansible.builtin.file:
+            path: "{{ hermes_runtime_archive_fixture.path }}/tree/example-plugin"
+            state: directory
+            mode: "0755"
+
+        - name: Write the fixture plugin metadata
+          ansible.builtin.copy:
+            content: "name: example-plugin\n"
+            dest: "{{ hermes_runtime_archive_fixture.path }}/tree/example-plugin/plugin.yaml"
+            mode: "0644"
+
+        - name: Pack the fixture archive
+          ansible.builtin.command:
+            argv: [tar, -czf, "{{ hermes_runtime_archive_fixture.path }}/plugin.tar.gz", -C,
+                   "{{ hermes_runtime_archive_fixture.path }}/tree", example-plugin]
+            creates: "{{ hermes_runtime_archive_fixture.path }}/plugin.tar.gz"
+
+        - name: Hash the fixture archive
+          ansible.builtin.stat:
+            path: "{{ hermes_runtime_archive_fixture.path }}/plugin.tar.gz"
+            checksum_algorithm: sha256
+          register: hermes_runtime_archive_fixture_stat
+
+        - name: Keep only the controller tasks of the archive preparation
+          ansible.builtin.copy:
+            content: >-
+              {{ lookup('file', playbook_dir ~ '/../roles/hermes_runtime/tasks/prepare_plugin_archive.yml')
+                 | from_yaml | selectattr('delegate_to', 'defined') | list | to_nice_yaml }}
+            dest: "{{ hermes_runtime_archive_fixture.path }}/controller_tasks.yml"
+            mode: "0644"
+
+    - name: Run the controller tasks in check mode
+      ansible.builtin.include_tasks:
+        file: "{{ hermes_runtime_archive_fixture.path }}/controller_tasks.yml"
+        apply:
+          check_mode: true
+      vars:
+        hermes_runtime_plugin_archive:
+          archive_url: "file://{{ hermes_runtime_archive_fixture.path }}/plugin.tar.gz"
+          archive_sha256: "{{ hermes_runtime_archive_fixture_stat.stat.checksum }}"
+          archive_subdir: example-plugin
+        hermes_runtime_plugin_archive_timeout: 60
+        hermes_runtime_plugin_controller_dir: "{{ hermes_runtime_archive_fixture.path }}/cache"
+
+    - name: Inspect the unpacked plugin
+      ansible.builtin.stat:
+        path: "{{ hermes_runtime_archive_fixture.path }}/cache/source/example-plugin/plugin.yaml"
+      vars:
+        ansible_become: false
+      register: hermes_runtime_archive_unpacked
+
+    - name: Assert check mode fetched and unpacked the archive without escalation
+      ansible.builtin.assert:
+        quiet: true
+        that:
+          - hermes_runtime_archive_unpacked.stat.exists
+
+    - name: Remove the fixture directory
+      ansible.builtin.file:
+        path: "{{ hermes_runtime_archive_fixture.path }}"
+        state: absent
+      vars:
+        ansible_become: false
 
 - name: Render Hermes runtime systemd units
   hosts: localhost

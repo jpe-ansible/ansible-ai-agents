@@ -72,8 +72,10 @@ hermes_runtime_plugin_homes:
 The role manages only the listed plugin directories and removes stale files
 inside those directories. It leaves other plugins in each home untouched.
 Python bytecode (`__pycache__` and `*.pyc`) inside a plugin directory is not
-managed, so the running gateway can write it. Check mode does not fetch archives,
-so archive plugins are not deployed in a check-mode run.
+managed, so the running gateway can write it. Check mode still fetches and
+extracts archives into the controller cache, so a check run proves the
+controller path. The controller tasks never escalate, even when the inventory
+sets `ansible_become`. Archive plugins are not deployed in a check-mode run.
 
 ## Usage
 
