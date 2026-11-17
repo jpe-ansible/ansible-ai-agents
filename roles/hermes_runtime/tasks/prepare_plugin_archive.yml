@@ -1,29 +1,53 @@
 ---
-- name: Create the Hermes plugin archive cache directory
+# The controller fetches and unpacks each pinned archive once; managed hosts receive only the plugin directory.
+- name: Create the controller plugin archive cache directory
+  ansible.builtin.file:
+    path: "{{ hermes_runtime_plugin_controller_dir }}/source"
+    state: directory
+    mode: "0755"
+  delegate_to: localhost
+  run_once: true
+  become: false
+
+- name: Fetch and verify the Hermes plugin archive
+  ansible.builtin.get_url:
+    url: "{{ hermes_runtime_plugin_archive.archive_url }}"
+    dest: "{{ hermes_runtime_plugin_controller_dir }}/archive.tar.gz"
+    checksum: "sha256:{{ hermes_runtime_plugin_archive.archive_sha256 | lower }}"
+    mode: "0644"
+  # A slow download fails this task by name instead of spending the whole run's time budget.
+  timeout: "{{ hermes_runtime_plugin_archive_timeout }}"
+  delegate_to: localhost
+  run_once: true
+  become: false
+
+- name: Extract only the plugin directory from the archive on the controller
+  ansible.builtin.unarchive:
+    src: "{{ hermes_runtime_plugin_controller_dir }}/archive.tar.gz"
+    dest: "{{ hermes_runtime_plugin_controller_dir }}/source"
+    remote_src: true
+    include:
+      - "{{ hermes_runtime_plugin_archive.archive_subdir }}"
+    creates: "{{ hermes_runtime_plugin_controller_dir }}/source/{{ hermes_runtime_plugin_archive.archive_subdir }}"
+  delegate_to: localhost
+  run_once: true
+  become: false
+
+- name: Create the Hermes plugin source directory
   become: true
   ansible.builtin.file:
-    path: "{{ hermes_runtime_plugin_archive_dir }}/source"
+    path: "{{ hermes_runtime_plugin_archive_dir }}/source/{{ hermes_runtime_plugin_archive.archive_subdir }}"
     state: directory
     owner: root
     group: root
     mode: "0755"
 
-- name: Fetch and verify the Hermes plugin archive
+- name: Copy the plugin directory to the managed host
   become: true
-  ansible.builtin.get_url:
-    url: "{{ hermes_runtime_plugin_archive.archive_url }}"
-    dest: "{{ hermes_runtime_plugin_archive_dir }}/archive.tar.gz"
-    checksum: "sha256:{{ hermes_runtime_plugin_archive.archive_sha256 | lower }}"
+  ansible.builtin.copy:
+    src: "{{ hermes_runtime_plugin_controller_dir }}/source/{{ hermes_runtime_plugin_archive.archive_subdir }}/"
+    dest: "{{ hermes_runtime_plugin_archive_dir }}/source/{{ hermes_runtime_plugin_archive.archive_subdir }}/"
     owner: root
     group: root
-    mode: "0644"
-  # A slow download fails this task by name instead of spending the whole run's time budget.
-  timeout: "{{ hermes_runtime_plugin_archive_timeout }}"
-
-- name: Extract the Hermes plugin archive once per checksum
-  become: true
-  ansible.builtin.unarchive:
-    src: "{{ hermes_runtime_plugin_archive_dir }}/archive.tar.gz"
-    dest: "{{ hermes_runtime_plugin_archive_dir }}/source"
-    remote_src: true
-    creates: "{{ hermes_runtime_plugin_archive_dir }}/source/{{ hermes_runtime_plugin_archive.archive_subdir }}"
+    mode: u=rwX,go=rX
+    directory_mode: "0755"

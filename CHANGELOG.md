@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.2](https://github.com/jpe-ansible/ansible-ai-agents/compare/v1.3.1...v1.3.2) (2026-11-17)
+
+
+### Bug Fixes
+
+* **hermes_runtime:** fetch plugin archives once on the controller ([#84](https://github.com/jpe-ansible/ansible-ai-agents/issues/84)) ([98486d9](https://github.com/jpe-ansible/ansible-ai-agents/commit/98486d996b8d008028686b5cf50f6723e12b6b78))
+
 ## [1.3.1](https://github.com/jpe-ansible/ansible-ai-agents/compare/v1.3.0...v1.3.1) (2026-11-17)
 
 
