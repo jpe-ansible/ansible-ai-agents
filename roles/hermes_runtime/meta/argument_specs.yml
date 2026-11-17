@@ -204,6 +204,10 @@ argument_specs:
         default: 600
         description:
           - Seconds one plugin archive download may take before the fetch task fails for that host.
+      hermes_runtime_plugin_controller_cache_dir: &hermes_runtime_plugin_controller_cache_dir
+        type: path
+        description:
+          - Controller directory that keeps fetched plugin archives, one subdirectory per archive checksum.
   install:
     short_description: Install a pinned Hermes Agent runtime.
     description:
@@ -268,3 +272,4 @@ argument_specs:
       hermes_runtime_plugins: *hermes_runtime_plugins
       hermes_runtime_plugin_homes: *hermes_runtime_plugin_homes
       hermes_runtime_plugin_archive_timeout: *hermes_runtime_plugin_archive_timeout
+      hermes_runtime_plugin_controller_cache_dir: *hermes_runtime_plugin_controller_cache_dir
