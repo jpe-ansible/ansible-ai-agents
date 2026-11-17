@@ -8,6 +8,11 @@
   delegate_to: localhost
   run_once: true
   become: false
+  # Controller-only cache writes, so a check run proves the fetch and unpack too.
+  check_mode: false
+  vars:
+    # An inherited ansible_become connection var outranks the become keyword.
+    ansible_become: false
 
 - name: Fetch and verify the Hermes plugin archive
   ansible.builtin.get_url:
@@ -20,6 +25,11 @@
   delegate_to: localhost
   run_once: true
   become: false
+  # Controller-only cache writes, so a check run proves the fetch and unpack too.
+  check_mode: false
+  vars:
+    # An inherited ansible_become connection var outranks the become keyword.
+    ansible_become: false
 
 - name: Extract only the plugin directory from the archive on the controller
   ansible.builtin.unarchive:
@@ -32,6 +42,11 @@
   delegate_to: localhost
   run_once: true
   become: false
+  # Controller-only cache writes, so a check run proves the fetch and unpack too.
+  check_mode: false
+  vars:
+    # An inherited ansible_become connection var outranks the become keyword.
+    ansible_become: false
 
 - name: Create the Hermes plugin source directory
   become: true
