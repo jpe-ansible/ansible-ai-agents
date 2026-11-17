@@ -370,6 +370,19 @@
           - hermes_runtime_venv_assert_task['ansible.builtin.assert'].that[1] is search('hermes_runtime_pm_python')
           - hermes_runtime_venv_assert_task.when == hermes_runtime_postinstall_assert_task.when
 
+    - name: Assert the plugin archive fetch has its own time bound
+      vars:
+        hermes_runtime_fetch_task: >-
+          {{ lookup('file', playbook_dir ~ '/../roles/hermes_runtime/tasks/prepare_plugin_archive.yml')
+             | from_yaml | selectattr('name', 'equalto', 'Fetch and verify the Hermes plugin archive') | first }}
+        hermes_runtime_role_defaults: >-
+          {{ lookup('file', playbook_dir ~ '/../roles/hermes_runtime/defaults/main.yml') | from_yaml }}
+      ansible.builtin.assert:
+        quiet: true
+        that:
+          - hermes_runtime_fetch_task.timeout == '{' ~ '{ hermes_runtime_plugin_archive_timeout }}'
+          - hermes_runtime_role_defaults.hermes_runtime_plugin_archive_timeout | int > 0
+
     - name: Assert unit deployment waits for the first install in check mode
       ansible.builtin.assert:
         quiet: true

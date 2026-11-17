@@ -17,6 +17,8 @@
     owner: root
     group: root
     mode: "0644"
+  # A slow download fails this task by name instead of spending the whole run's time budget.
+  timeout: "{{ hermes_runtime_plugin_archive_timeout }}"
 
 - name: Extract the Hermes plugin archive once per checksum
   become: true

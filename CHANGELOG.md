@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.1](https://github.com/jpe-ansible/ansible-ai-agents/compare/v1.3.0...v1.3.1) (2026-11-17)
+
+
+### Bug Fixes
+
+* **hermes_runtime:** bound the plugin archive download ([#81](https://github.com/jpe-ansible/ansible-ai-agents/issues/81)) ([e98dce7](https://github.com/jpe-ansible/ansible-ai-agents/commit/e98dce72778e52f00e856a810435a63735858ce0))
+
 ## [1.3.0](https://github.com/jpe-ansible/ansible-ai-agents/compare/v1.2.10...v1.3.0) (2026-11-16)
 
 
