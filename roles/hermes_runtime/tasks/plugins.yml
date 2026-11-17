@@ -33,6 +33,8 @@
   vars:
     hermes_runtime_plugin_archive_dir: >-
       /var/cache/hermes-runtime/plugins/{{ hermes_runtime_plugin_archive.archive_sha256 | lower }}
+    hermes_runtime_plugin_controller_dir: >-
+      {{ hermes_runtime_plugin_controller_cache_dir }}/{{ hermes_runtime_plugin_archive.archive_sha256 | lower }}
   # Check mode does not fetch archives; archive plugins are not deployed in that run.
   when: not ansible_check_mode
 

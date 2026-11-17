@@ -24,6 +24,7 @@ support the upstream installer and systemd.
 | `hermes_runtime_hermes_home` | path | yes | Working directory and `HERMES_HOME`. |
 | `hermes_runtime_plugins` | list | no | Plugin definitions; defaults to `[]`. |
 | `hermes_runtime_plugin_homes` | list of paths | no | Homes that receive each listed plugin; defaults to `[hermes_runtime_hermes_home]`. |
+| `hermes_runtime_plugin_controller_cache_dir` | path | no | Controller directory for fetched plugin archives; defaults to `~/.cache/hermes-runtime/plugins`. |
 | `hermes_runtime_environment_file` | path | yes | Optional environment file loaded by both units. |
 | `hermes_runtime_dashboard_web_dist` | path | no | Dashboard web asset directory. |
 | `hermes_runtime_dashboard_host` | string | yes | Dashboard bind host. |
@@ -45,7 +46,10 @@ support the upstream installer and systemd.
 
 Each plugin has a directory `name` and exactly one source. Archives require a
 SHA-256 checksum and the path to the plugin directory inside the extracted
-archive. `src` points to a directory already present on the managed host.
+archive. The controller fetches each archive once into
+`hermes_runtime_plugin_controller_cache_dir`, extracts only that directory, and
+copies it to each managed host. `src` points to a directory already present on
+the managed host.
 Optional Python requirements must be pinned with `==`. They install into the
 Hermes virtual environment PM selects (`hermes_runtime_venv`) with the managed `uv` at `/root/.hermes/bin/uv`, the
 path the upstream installer creates.
