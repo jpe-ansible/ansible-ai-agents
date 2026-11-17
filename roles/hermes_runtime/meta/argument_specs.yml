@@ -195,6 +195,11 @@ argument_specs:
         elements: path
         description:
           - Hermes homes that receive each listed plugin; defaults to the primary home.
+      hermes_runtime_plugin_archive_timeout: &hermes_runtime_plugin_archive_timeout
+        type: int
+        default: 600
+        description:
+          - Seconds one plugin archive download may take before the fetch task fails for that host.
   install:
     short_description: Install a pinned Hermes Agent runtime.
     description:
@@ -257,3 +262,4 @@ argument_specs:
       hermes_runtime_gateway_restart_handler: *hermes_runtime_gateway_restart_handler
       hermes_runtime_plugins: *hermes_runtime_plugins
       hermes_runtime_plugin_homes: *hermes_runtime_plugin_homes
+      hermes_runtime_plugin_archive_timeout: *hermes_runtime_plugin_archive_timeout
